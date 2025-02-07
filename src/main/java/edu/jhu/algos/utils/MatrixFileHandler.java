@@ -75,17 +75,35 @@ public class MatrixFileHandler {
      * @throws IllegalArgumentException If JSON format is invalid.
      */
     private static double[][] parseJsonMatrix(String jsonLine) {
-        jsonLine = jsonLine.replaceAll("[\\[\\]]", ""); // Remove brackets to isolate numbers
-        String[] rows = jsonLine.split("],\\s*\\["); // Split by row separators
-        int size = rows.length; // Determine matrix size from the number of rows
-        double[][] matrix = new double[size][size]; // Create a square matrix
+        jsonLine = jsonLine.trim();
+
+        // Ensure it starts and ends with brackets (valid JSON-like format)
+        if (!jsonLine.startsWith("[[") || !jsonLine.endsWith("]]")) {
+            throw new IllegalArgumentException("Invalid JSON matrix format: " + jsonLine);
+        }
+
+        // Remove outer brackets [[...]] to extract matrix data
+        jsonLine = jsonLine.substring(2, jsonLine.length() - 2);
+
+        // Split into rows (handling cases with and without spaces)
+        String[] rows = jsonLine.split("\\],\\[");
+
+        int size = rows.length; // Matrix size inferred from row count
+        double[][] matrix = new double[size][size];
 
         for (int i = 0; i < size; i++) {
             String[] values = rows[i].split(","); // Split row values by comma
-            if (values.length != size) throw new IllegalArgumentException("Malformed JSON matrix row: " + rows[i]);
+
+            if (values.length != size) { // Ensure correct number of columns
+                throw new IllegalArgumentException("Malformed JSON matrix row: " + rows[i]);
+            }
 
             for (int j = 0; j < size; j++) {
-                matrix[i][j] = Double.parseDouble(values[j].trim()); // Convert each value to double
+                try {
+                    matrix[i][j] = Double.parseDouble(values[j].trim()); // Convert to double
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid number at row " + i + ", column " + j + ": " + values[j]);
+                }
             }
         }
         return matrix;
@@ -163,5 +181,18 @@ public class MatrixFileHandler {
             }
         }
         return matrix;
+    }
+    /**
+     * Writes a matrix to a file in a human-readable format.
+     *
+     * @param matrix The matrix to write.
+     * @param filePath The file path to save the matrix.
+     * @throws IOException If there is an error writing the file.
+     */
+    public static void writeMatrixToFile(Matrix matrix, String filePath) throws IOException {
+        // Try-with-resources ensures BufferedWriter is closed automatically
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(matrix.toString()); // Convert matrix to string format and write to file
+        }
     }
 }
