@@ -70,6 +70,7 @@ public class NaiveMultiplicationTest {
     void testNullMatrixMultiplication() {
         Matrix A = new Matrix(2, 2, new double[][]{{1, 2}, {3, 4}});
 
+        // Both cases should throw an IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> NaiveMultiplication.multiply(A, null));
         assertThrows(IllegalArgumentException.class, () -> NaiveMultiplication.multiply(null, A));
     }
@@ -83,6 +84,7 @@ public class NaiveMultiplicationTest {
         Matrix emptyMatrix = new Matrix(0, 0, new double[0][0]);
         Matrix A = new Matrix(2, 2, new double[][]{{1, 2}, {3, 4}});
 
+        // Both cases should throw an IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> NaiveMultiplication.multiply(A, emptyMatrix));
         assertThrows(IllegalArgumentException.class, () -> NaiveMultiplication.multiply(emptyMatrix, A));
     }
@@ -148,7 +150,7 @@ public class NaiveMultiplicationTest {
     /**
      * Tests multiplication count tracking.
      * Since A (2×2) and B (2×2) are multiplied,
-     * the expected multiplication count should be **2 × 2 × 2 = 8**.
+     * the expected multiplication count should be 2 × 2 × 2 = 8.
      */
     @Test
     void testMultiplicationCount() {
@@ -165,6 +167,7 @@ public class NaiveMultiplicationTest {
         Matrix B = new Matrix(2, 2, dataB);
         NaiveMultiplication.multiply(A, B);
 
-        assertEquals(8, NaiveMultiplication.getMultiplicationCount()); // 2×2×2 = 8 multiplications
+        // Expect 2 * 2 * 2 = 8 multiplications
+        assertEquals(8, NaiveMultiplication.getMultiplicationCount());
     }
 }
