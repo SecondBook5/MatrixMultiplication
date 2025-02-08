@@ -7,11 +7,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the Matrix class.
+ *
+ * Ensures:
+ * - Correct construction and validation of matrices.
+ * - Proper deep copying behavior to prevent unintended modifications.
+ * - Accurate addition and subtraction operations using loop unrolling.
+ * - Correct identification of square matrices and power-of-two dimensions.
+ * - Reliable equality and hashing functions.
+ * - Edge cases for invalid inputs and operations.
  */
 public class MatrixTest {
 
     /**
      * Tests whether a valid matrix is created successfully.
+     * Ensures the dimensions are correctly assigned.
      */
     @Test
     void testMatrixCreation() {
@@ -26,6 +35,7 @@ public class MatrixTest {
 
     /**
      * Tests whether the deep copy mechanism prevents external modification.
+     * The matrix should remain unchanged even if the original array is modified.
      */
     @Test
     void testDeepCopy() {
@@ -39,7 +49,7 @@ public class MatrixTest {
         data[0][0] = 99;
 
         // Ensure the matrix remains unchanged
-        assertEquals(1.0, matrix.getData(true)[0][0]);
+        assertEquals(1.0, matrix.getDataCopy()[0][0]);
     }
 
     /**
@@ -88,7 +98,7 @@ public class MatrixTest {
         Matrix B = new Matrix(2, 2, dataB);
         Matrix sum = A.add(B);
 
-        assertArrayEquals(expectedSum, sum.getData(true));
+        assertArrayEquals(expectedSum, sum.getDataCopy());
     }
 
     /**
@@ -113,7 +123,7 @@ public class MatrixTest {
         Matrix B = new Matrix(2, 2, dataB);
         Matrix diff = A.subtract(B);
 
-        assertArrayEquals(expectedDiff, diff.getData(true));
+        assertArrayEquals(expectedDiff, diff.getDataCopy());
     }
 
     /**
@@ -176,5 +186,53 @@ public class MatrixTest {
         String expectedOutput = "|  1.00  2.00 |\n|  3.00  4.00 |\n";
 
         assertEquals(expectedOutput.trim(), matrix.toString().trim());
+    }
+
+    /**
+     * Tests edge cases for invalid operations.
+     * Ensures error handling for mismatched sizes in addition and subtraction.
+     */
+    @Test
+    void testInvalidMatrixOperations() {
+        double[][] dataA = {
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}
+        };
+        double[][] dataB = {
+                {1.0, 2.0},
+                {3.0, 4.0}
+        };
+
+        Matrix A = new Matrix(2, 3, dataA);
+        Matrix B = new Matrix(2, 2, dataB);
+
+        assertThrows(IllegalArgumentException.class, () -> A.add(B));
+        assertThrows(IllegalArgumentException.class, () -> A.subtract(B));
+    }
+
+    /**
+     * Tests edge cases for handling zero matrices.
+     */
+    @Test
+    void testZeroMatrixOperations() {
+        double[][] zeroData = {
+                {0.0, 0.0},
+                {0.0, 0.0}
+        };
+        double[][] nonZeroData = {
+                {1.0, 2.0},
+                {3.0, 4.0}
+        };
+
+        Matrix zeroMatrix = new Matrix(2, 2, zeroData);
+        Matrix nonZeroMatrix = new Matrix(2, 2, nonZeroData);
+
+        // Adding a zero matrix should return the original matrix
+        Matrix sum = nonZeroMatrix.add(zeroMatrix);
+        assertArrayEquals(nonZeroData, sum.getDataCopy());
+
+        // Subtracting a zero matrix should return the original matrix
+        Matrix diff = nonZeroMatrix.subtract(zeroMatrix);
+        assertArrayEquals(nonZeroData, diff.getDataCopy());
     }
 }

@@ -8,7 +8,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the NaiveMultiplication class.
- * Ensures correctness, error handling, and multiplication count tracking.
+ *
+ * Ensures:
+ * - Correct multiplication of valid matrices.
+ * - Proper exception handling for invalid operations.
+ * - Handling of edge cases like identity and zero matrices.
+ * - Accurate tracking of scalar multiplications.
  */
 public class NaiveMultiplicationTest {
 
@@ -37,7 +42,7 @@ public class NaiveMultiplicationTest {
         Matrix B = new Matrix(2, 2, dataB);
         Matrix product = NaiveMultiplication.multiply(A, B);
 
-        assertArrayEquals(expectedProduct, product.getData(true));
+        assertArrayEquals(expectedProduct, product.getDataCopy());
     }
 
     /**
@@ -91,10 +96,7 @@ public class NaiveMultiplicationTest {
 
     /**
      * Tests multiplication with an identity matrix.
-     * Multiplying by an identity matrix should return the same matrix.
-     * Expected result:
-     *      [3  4]   ×   [1  0]   =   [3  4]
-     *      [5  6]       [0  1]       [5  6]
+     * Multiplying by an identity matrix should return the original matrix.
      */
     @Test
     void testMultiplicationWithIdentity() {
@@ -106,16 +108,12 @@ public class NaiveMultiplicationTest {
                 {1, 0},
                 {0, 1}
         };
-        double[][] expectedProduct = {
-                {3, 4},
-                {5, 6}
-        };
 
         Matrix A = new Matrix(2, 2, dataA);
         Matrix I = new Matrix(2, 2, identityMatrix);
         Matrix product = NaiveMultiplication.multiply(A, I);
 
-        assertArrayEquals(expectedProduct, product.getData(true));
+        assertArrayEquals(dataA, product.getDataCopy());
     }
 
     /**
@@ -144,7 +142,7 @@ public class NaiveMultiplicationTest {
         Matrix Z = new Matrix(2, 2, zeroMatrix);
         Matrix product = NaiveMultiplication.multiply(A, Z);
 
-        assertArrayEquals(expectedProduct, product.getData(true));
+        assertArrayEquals(expectedProduct, product.getDataCopy());
     }
 
     /**
@@ -167,7 +165,79 @@ public class NaiveMultiplicationTest {
         Matrix B = new Matrix(2, 2, dataB);
         NaiveMultiplication.multiply(A, B);
 
-        // Expect 2 * 2 * 2 = 8 multiplications
-        assertEquals(8, NaiveMultiplication.getMultiplicationCount());
+        assertEquals(8, NaiveMultiplication.getMultiplicationCount()); // 2×2×2 = 8 multiplications
+    }
+
+    /**
+     * Tests handling of large matrices to verify efficiency and correctness.
+     * Uses a 4×4 matrix for moderate scaling.
+     */
+    @Test
+    void testLargeMatrixMultiplication() {
+        double[][] dataA = {
+                {1, 2, 3, 4},
+                {5, 6, 7, 8},
+                {9, 10, 11, 12},
+                {13, 14, 15, 16}
+        };
+        double[][] dataB = {
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {0, 0, 0, 1}
+        };
+
+        Matrix A = new Matrix(4, 4, dataA);
+        Matrix I = new Matrix(4, 4, dataB);
+        Matrix product = NaiveMultiplication.multiply(A, I);
+
+        assertArrayEquals(dataA, product.getDataCopy());
+    }
+
+    /**
+     * Tests multiplication of non-square matrices.
+     * Ensures correct handling of different row and column sizes.
+     */
+    @Test
+    void testNonSquareMatrixMultiplication() {
+        double[][] dataA = {
+                {1, 2, 3},
+                {4, 5, 6}
+        };
+        double[][] dataB = {
+                {7, 8},
+                {9, 10},
+                {11, 12}
+        };
+        double[][] expectedProduct = {
+                {58, 64},
+                {139, 154}
+        };
+
+        Matrix A = new Matrix(2, 3, dataA);
+        Matrix B = new Matrix(3, 2, dataB);
+        Matrix product = NaiveMultiplication.multiply(A, B);
+
+        assertArrayEquals(expectedProduct, product.getDataCopy());
+    }
+
+    /**
+     * Tests invalid operations that should throw exceptions.
+     */
+    @Test
+    void testInvalidMatrixOperations() {
+        double[][] dataA = {
+                {1, 2, 3},
+                {4, 5, 6}
+        };
+        double[][] dataB = {
+                {1, 2},
+                {3, 4}
+        };
+
+        Matrix A = new Matrix(2, 3, dataA);
+        Matrix B = new Matrix(2, 2, dataB);
+
+        assertThrows(IllegalArgumentException.class, () -> NaiveMultiplication.multiply(A, B));
     }
 }

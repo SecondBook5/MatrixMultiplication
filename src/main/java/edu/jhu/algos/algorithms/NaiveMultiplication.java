@@ -34,25 +34,25 @@ public class NaiveMultiplication {
      * @throws IllegalArgumentException If matrices cannot be multiplied.
      */
     public static Matrix multiply(Matrix A, Matrix B) {
-        // Validate input matrices before proceeding
-        validateMatrices(A, B);
-
-        // Reset multiplication counter for tracking performance
-        multiplicationCount = 0;
-
-        // Get matrix dimensions
-        int m = A.getRows(); // Number of rows in A
-        int n = A.getCols(); // Number of columns in A (must match rows in B)
-        int p = B.getCols(); // Number of columns in B
-
-        // Initialize result matrix with zero values
-        double[][] result = new double[m][p];
-
-        // Define block size for tiling (adjust based on CPU cache size)
-        int BLOCK_SIZE = 64 / Double.BYTES; // Assumes a 64-byte cache line
-
         try {
-            // Blocked matrix multiplication with loop unrolling
+            // Validate input matrices before proceeding
+            validateMatrices(A, B);
+
+            // Reset multiplication counter for tracking performance
+            multiplicationCount = 0;
+
+            // Get matrix dimensions
+            int m = A.getRows(); // Number of rows in A
+            int n = A.getCols(); // Number of columns in A (must match rows in B)
+            int p = B.getCols(); // Number of columns in B
+
+            // Initialize result matrix with zero values
+            double[][] result = new double[m][p];
+
+            // Define block size for tiling (adjust based on CPU cache size)
+            int BLOCK_SIZE = 64 / Double.BYTES; // Assumes a 64-byte cache line
+
+            // **Blocked matrix multiplication with loop unrolling**
             for (int bi = 0; bi < m; bi += BLOCK_SIZE) { // Process row blocks
                 for (int bj = 0; bj < p; bj += BLOCK_SIZE) { // Process column blocks
                     for (int bk = 0; bk < n; bk += BLOCK_SIZE) { // Process depth blocks
@@ -60,11 +60,11 @@ public class NaiveMultiplication {
                         // Compute each block of the result matrix
                         for (int i = bi; i < Math.min(bi + BLOCK_SIZE, m); i++) {
                             for (int k = bk; k < Math.min(bk + BLOCK_SIZE, n); k++) {
-                                double a_ik = A.getData(false)[i][k]; // Cache A[i][k] to reduce memory accesses
+                                double a_ik = A.getData()[i][k]; // Cache A[i][k] to reduce memory accesses
                                 for (int j = bj; j < Math.min(bj + BLOCK_SIZE, p); j += 2) {
-                                    result[i][j] += a_ik * B.getData(false)[k][j]; // Standard multiplication
+                                    result[i][j] += a_ik * B.getData()[k][j]; // Standard multiplication
                                     if (j + 1 < p) {
-                                        result[i][j + 1] += a_ik * B.getData(false)[k][j + 1]; // Loop unrolling
+                                        result[i][j + 1] += a_ik * B.getData()[k][j + 1]; // Loop unrolling
                                     }
                                     multiplicationCount += 2; // Track scalar multiplications
                                 }
@@ -77,10 +77,11 @@ public class NaiveMultiplication {
             // Return the resulting product matrix
             return new Matrix(m, p, result);
 
+        } catch (IllegalArgumentException e) {
+            throw e; // Preserve expected validation exceptions
         } catch (Exception e) {
-            // Catch-all block for unexpected runtime errors
-            System.err.println("Unexpected error during matrix multiplication: " + e.getMessage());
-            throw new RuntimeException("Matrix multiplication failed due to an unexpected error.", e);
+            // Catch unexpected runtime errors
+            throw new RuntimeException("Unexpected error during matrix multiplication: " + e.getMessage(), e);
         }
     }
 
