@@ -76,6 +76,16 @@ public final class Matrix {
     }
 
     /**
+     * Returns the size of the square matrix (n × n).
+     *
+     * @return The size of the matrix.
+     */
+    public int getSize() {
+        return this.size;
+    }
+
+
+    /**
      * Adds two matrices element-wise.
      * Uses loop unrolling to optimize performance.
      *
@@ -202,7 +212,7 @@ public final class Matrix {
             for (int i = 0; i < size; i++) {                                            // Iterate over rows
                 sb.append("| ");                                                        // Start each row with a separator
                 for (int j = 0; j < size; j++) {                                       // Iterate over columns
-                    sb.append(String.format("%6.2f ", data[i * size + j]));            // Format values with two decimal places
+                    sb.append(String.format("%5.2f ", data[i * size + j]));            // Format values with two decimal places
                 }
                 sb.append("|\n");                                                      // Close the row with a separator
             }

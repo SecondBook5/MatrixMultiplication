@@ -2,237 +2,179 @@ package edu.jhu.algos.test.models;
 
 import edu.jhu.algos.models.Matrix;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for the Matrix class.
- *
- * Ensures:
- * - Correct construction and validation of matrices.
- * - Proper deep copying behavior to prevent unintended modifications.
- * - Accurate addition and subtraction operations using loop unrolling.
- * - Correct identification of square matrices and power-of-two dimensions.
- * - Reliable equality and hashing functions.
- * - Edge cases for invalid inputs and operations.
- */
 public class MatrixTest {
 
-    /**
-     * Tests whether a valid matrix is created successfully.
-     * Ensures the dimensions are correctly assigned.
-     */
     @Test
     void testMatrixCreation() {
-        double[][] data = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        Matrix matrix = new Matrix(2, 2, data);
-        assertEquals(2, matrix.getRows());
-        assertEquals(2, matrix.getCols());
+        double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+        Matrix matrix = new Matrix(2, data);
+        assertEquals(2, matrix.retrieveRowMajorAs2D().length);
+        assertEquals(2, matrix.retrieveRowMajorAs2D()[0].length);
     }
 
-    /**
-     * Tests whether the deep copy mechanism prevents external modification.
-     * The matrix should remain unchanged even if the original array is modified.
-     */
     @Test
-    void testDeepCopy() {
-        double[][] data = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        Matrix matrix = new Matrix(2, 2, data);
-
-        // Modify original array after creation
-        data[0][0] = 99;
-
-        // Ensure the matrix remains unchanged
-        assertEquals(1.0, matrix.getDataCopy()[0][0]);
+    void testMatrixInitializationErrors() {
+        assertThrows(NullPointerException.class, () -> new Matrix(2, null));
+        assertThrows(IllegalArgumentException.class, () -> new Matrix(3, new double[3][3]));
+        assertThrows(IllegalArgumentException.class, () -> new Matrix(4, new double[4][3]));
     }
 
-    /**
-     * Tests whether the matrix correctly identifies square matrices.
-     */
     @Test
-    void testIsSquareMatrix() {
-        Matrix squareMatrix = new Matrix(3, 3, new double[3][3]);
-        Matrix nonSquareMatrix = new Matrix(3, 4, new double[3][4]);
-
-        assertTrue(squareMatrix.isSquare());
-        assertFalse(nonSquareMatrix.isSquare());
+    void testRetrieveRowMajorAs2D() {
+        double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+        Matrix matrix = new Matrix(2, data);
+        assertArrayEquals(data, matrix.retrieveRowMajorAs2D());
     }
 
-    /**
-     * Tests whether the matrix correctly identifies power-of-two sizes.
-     */
-    @Test
-    void testIsPowerOfTwoSquare() {
-        Matrix powerOfTwoMatrix = new Matrix(8, 8, new double[8][8]);
-        Matrix nonPowerOfTwoMatrix = new Matrix(5, 5, new double[5][5]);
-
-        assertTrue(powerOfTwoMatrix.isPowerOfTwoSquare());
-        assertFalse(nonPowerOfTwoMatrix.isPowerOfTwoSquare());
-    }
-
-    /**
-     * Tests whether matrix addition is computed correctly.
-     */
     @Test
     void testMatrixAddition() {
-        double[][] dataA = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        double[][] dataB = {
-                {5.0, 6.0},
-                {7.0, 8.0}
-        };
-        double[][] expectedSum = {
-                {6.0, 8.0},
-                {10.0, 12.0}
-        };
-
-        Matrix A = new Matrix(2, 2, dataA);
-        Matrix B = new Matrix(2, 2, dataB);
-        Matrix sum = A.add(B);
-
-        assertArrayEquals(expectedSum, sum.getDataCopy());
+        double[][] dataA = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] dataB = {{5.0, 6.0}, {7.0, 8.0}};
+        double[][] expectedSum = {{6.0, 8.0}, {10.0, 12.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        assertArrayEquals(expectedSum, A.add(B).retrieveRowMajorAs2D());
     }
 
-    /**
-     * Tests whether matrix subtraction is computed correctly.
-     */
     @Test
     void testMatrixSubtraction() {
-        double[][] dataA = {
-                {5.0, 6.0},
-                {7.0, 8.0}
-        };
-        double[][] dataB = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        double[][] expectedDiff = {
-                {4.0, 4.0},
-                {4.0, 4.0}
-        };
-
-        Matrix A = new Matrix(2, 2, dataA);
-        Matrix B = new Matrix(2, 2, dataB);
-        Matrix diff = A.subtract(B);
-
-        assertArrayEquals(expectedDiff, diff.getDataCopy());
+        double[][] dataA = {{5.0, 6.0}, {7.0, 8.0}};
+        double[][] dataB = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] expectedDiff = {{4.0, 4.0}, {4.0, 4.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        assertArrayEquals(expectedDiff, A.subtract(B).retrieveRowMajorAs2D());
     }
 
-    /**
-     * Tests matrix equality based on identical values.
-     */
     @Test
     void testMatrixEquality() {
-        double[][] dataA = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        double[][] dataB = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        double[][] dataC = {
-                {5.0, 6.0},
-                {7.0, 8.0}
-        };
+        double[][] dataA = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] dataB = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] dataC = {{5.0, 6.0}, {7.0, 8.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        Matrix C = new Matrix(2, dataC);
+        assertEquals(A, B);
+        assertNotEquals(A, C);
+    }
 
-        Matrix A = new Matrix(2, 2, dataA);
-        Matrix B = new Matrix(2, 2, dataB);
-        Matrix C = new Matrix(2, 2, dataC);
+    @Test
+    void testMethodChaining() {
+        double[][] dataA = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] dataB = {{2.0, 2.0}, {2.0, 2.0}};
+        double[][] dataC = {{1.0, 1.0}, {1.0, 1.0}};
+        double[][] expectedResult = {{2.0, 3.0}, {4.0, 5.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        Matrix C = new Matrix(2, dataC);
+        assertArrayEquals(expectedResult, A.add(B).subtract(C).retrieveRowMajorAs2D());
+    }
 
-        assertEquals(A, B); // Matrices with identical values should be equal
-        assertNotEquals(A, C); // Different matrices should not be equal
+    @Test
+    void testZeroMatrixFactoryMethod() {
+        Matrix zeroMatrix = Matrix.zeroMatrix(2);
+        double[][] expected = {{0.0, 0.0}, {0.0, 0.0}};
+        assertArrayEquals(expected, zeroMatrix.retrieveRowMajorAs2D());
+    }
+
+    @Test
+    void testZeroMatrixInvalidSize() {
+        assertThrows(IllegalArgumentException.class, () -> Matrix.zeroMatrix(-1));
+        assertThrows(IllegalArgumentException.class, () -> Matrix.zeroMatrix(3));
+    }
+
+    @Test
+    void testMatrixDataIntegrity() {
+        double[][] originalData = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] additionData = {{5.0, 6.0}, {7.0, 8.0}};
+        Matrix A = new Matrix(2, originalData);
+        Matrix B = new Matrix(2, additionData);
+        A.add(B);
+        A.subtract(B);
+        assertArrayEquals(originalData, A.retrieveRowMajorAs2D());
+        assertArrayEquals(additionData, B.retrieveRowMajorAs2D());
+    }
+
+    @Test
+    void testLargeMatrixOperations() {
+        int size = 1024;
+        double[][] dataA = new double[size][size];
+        double[][] dataB = new double[size][size];
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                dataA[i][j] = 1.0;
+                dataB[i][j] = 2.0;
+            }
+        }
+        Matrix A = new Matrix(size, dataA);
+        Matrix B = new Matrix(size, dataB);
+        Matrix sum = A.add(B);
+        assertEquals(3.0, sum.retrieveRowMajorAs2D()[0][0]);
+        assertEquals(3.0, sum.retrieveRowMajorAs2D()[size - 1][size - 1]);
+    }
+
+    @Test
+    void testIdentityMatrixOperations() {
+        double[][] dataA = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] identity = {{1.0, 0.0}, {0.0, 1.0}};
+        double[][] expectedSum = {{2.0, 2.0}, {3.0, 5.0}};
+        double[][] expectedDiff = {{0.0, 2.0}, {3.0, 3.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix I = new Matrix(2, identity);
+        assertArrayEquals(expectedSum, A.add(I).retrieveRowMajorAs2D());
+        assertArrayEquals(expectedDiff, A.subtract(I).retrieveRowMajorAs2D());
+    }
+
+
+    /**
+     * Tests that two equal matrices have the same hash code.
+     */
+    @Test
+    void testHashCodeConsistency() {
+        double[][] dataA = {{1.0, 2.0}, {3.0, 4.0}};
+        double[][] dataB = {{1.0, 2.0}, {3.0, 4.0}};
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+
+        assertEquals(A.hashCode(), B.hashCode());
     }
 
     /**
-     * Tests matrix hashing to ensure consistent hash codes for identical matrices.
+     * Tests that the string representation of a matrix is formatted correctly.
      */
     @Test
-    void testMatrixHashing() {
-        double[][] dataA = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-        double[][] dataB = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
+    void testToString() {
+        double[][] data = {{1.0, 2.0}, {3.0, 4.0}};
+        Matrix matrix = new Matrix(2, data);
 
-        Matrix A = new Matrix(2, 2, dataA);
-        Matrix B = new Matrix(2, 2, dataB);
-
-        assertEquals(A.hashCode(), B.hashCode()); // Identical matrices should have the same hash
-    }
-
-    /**
-     * Tests whether the matrix `toString()` method formats correctly.
-     */
-    @Test
-    void testMatrixToString() {
-        double[][] data = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-
-        Matrix matrix = new Matrix(2, 2, data);
-        String expectedOutput = "|  1.00  2.00 |\n|  3.00  4.00 |\n";
+        String expectedOutput =
+                """
+                        Matrix (2x2):
+                        |  1.00  2.00 |
+                        |  3.00  4.00 |
+                        """;
 
         assertEquals(expectedOutput.trim(), matrix.toString().trim());
     }
 
     /**
-     * Tests edge cases for invalid operations.
-     * Ensures error handling for mismatched sizes in addition and subtraction.
+     * Tests that creating a non-power-of-two matrix throws an exception.
      */
     @Test
-    void testInvalidMatrixOperations() {
-        double[][] dataA = {
-                {1.0, 2.0, 3.0},
-                {4.0, 5.0, 6.0}
-        };
-        double[][] dataB = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-
-        Matrix A = new Matrix(2, 3, dataA);
-        Matrix B = new Matrix(2, 2, dataB);
-
-        assertThrows(IllegalArgumentException.class, () -> A.add(B));
-        assertThrows(IllegalArgumentException.class, () -> A.subtract(B));
+    void testNonPowerOfTwoMatrixRejection() {
+        assertThrows(IllegalArgumentException.class, () -> new Matrix(3, new double[3][3]));
+        assertThrows(IllegalArgumentException.class, () -> new Matrix(5, new double[5][5]));
     }
 
     /**
-     * Tests edge cases for handling zero matrices.
+     * Tests that getSize() returns the correct size of the matrix.
      */
     @Test
-    void testZeroMatrixOperations() {
-        double[][] zeroData = {
-                {0.0, 0.0},
-                {0.0, 0.0}
-        };
-        double[][] nonZeroData = {
-                {1.0, 2.0},
-                {3.0, 4.0}
-        };
-
-        Matrix zeroMatrix = new Matrix(2, 2, zeroData);
-        Matrix nonZeroMatrix = new Matrix(2, 2, nonZeroData);
-
-        // Adding a zero matrix should return the original matrix
-        Matrix sum = nonZeroMatrix.add(zeroMatrix);
-        assertArrayEquals(nonZeroData, sum.getDataCopy());
-
-        // Subtracting a zero matrix should return the original matrix
-        Matrix diff = nonZeroMatrix.subtract(zeroMatrix);
-        assertArrayEquals(nonZeroData, diff.getDataCopy());
+    void testGetSize() {
+        Matrix matrix = new Matrix(4, new double[4][4]);
+        assertEquals(4, matrix.getSize());
     }
 }
+
