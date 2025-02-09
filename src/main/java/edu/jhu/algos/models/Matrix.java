@@ -10,10 +10,8 @@ import java.util.Objects;
  * Implements defensive programming with centralized error handling.
  */
 public final class Matrix {
-    // The size of the square matrix (n × n)
-    private final int size;
-    // A 1D array storing the matrix data in row-major order
-    private final double[] data;
+    private final int size;       // The size of the square matrix (n × n)
+    private final double[] data; // A 1D array storing the matrix data in row-major order
 
     /**
      * Constructs an n × n matrix and validates the input.
@@ -26,22 +24,17 @@ public final class Matrix {
      * @throws RuntimeException If an unexpected error occurs during matrix initialization.
      */
     public Matrix(int size, double[][] data) {
-        // Ensure the input matrix is not null before proceeding
-        if (data == null) {
+        if (data == null) {                                   // Ensure the input matrix is not null before proceeding
             throw new NullPointerException("Matrix initialization failed: Data array cannot be null.");
         }
         try {
-            // Validate that the matrix is square
-            MatrixValidator.validateSquareMatrix(size, size);
-            // Validate that the matrix dimensions match expectations
-            MatrixValidator.validateMatrix(size, size, data);
-            // Validate that the matrix size is a power of two (required for Strassen's Algorithm)
-            MatrixValidator.validatePowerOfTwoSize(size);
+            MatrixValidator.validateSquareMatrix(size, size); // Validate that the matrix is square
+            MatrixValidator.validateMatrix(size, size, data); // Validate that the matrix dimensions match expectations
+            MatrixValidator.validatePowerOfTwoSize(size);     // Validate that the matrix size is a power of two (required for Strassen's Algorithm)
 
-            this.size = size;
-            this.data = new double[size * size];
-            // Store matrix elements in row-major order for efficient memory access
-            storeInRowMajor(data);
+            this.size = size;                     // Store the matrix size
+            this.data = new double[size * size]; // Initialize the 1D array to store matrix data
+            storeInRowMajor(data);               // Store matrix elements in row-major order for efficient memory access
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Matrix initialization failed: " + e.getMessage(), e);
         } catch (Exception e) {
@@ -57,7 +50,7 @@ public final class Matrix {
      */
     private void storeInRowMajor(double[][] data) {
         for (int i = 0; i < size; i++) {
-            // Copy each row into the corresponding position in the 1D array
+            // Copy each row from the 2D array into the 1D storage
             System.arraycopy(data[i], 0, this.data, i * size, size);
         }
     }
@@ -71,6 +64,7 @@ public final class Matrix {
     public double[][] retrieveRowMajorAs2D() {
         double[][] result = new double[size][size];
         try {
+            // Iterate over each row in the matrix
             for (int i = 0; i < size; i++) {
                 // Copy back each row from the 1D storage into the 2D array
                 System.arraycopy(this.data, i * size, result[i], 0, size);
@@ -96,12 +90,10 @@ public final class Matrix {
             throw new NullPointerException("Matrix addition failed: Other matrix cannot be null.");
         }
         try {
-            // Validate that both matrices have the same size
-            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D());
-            double[] result = new double[size * size];
-            // Perform element-wise addition with loop unrolling for efficiency
-            unrolledElementWiseOperation(other, result, true);
-            return new Matrix(size, convertTo2D(result));
+            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D()); // Validate that both matrices have the same size
+            double[] result = new double[size * size];                               // Initialize array to store the sum
+            unrolledElementWiseOperation(other, result, true);             // Perform element-wise addition with loop unrolling for efficiency
+            return new Matrix(size, convertTo2D(result));                           // Return the sum as a new matrix
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Matrix addition failed: " + e.getMessage(), e);
         } catch (Exception e) {
@@ -124,19 +116,16 @@ public final class Matrix {
             throw new NullPointerException("Matrix subtraction failed: Other matrix cannot be null.");
         }
         try {
-            // Validate that both matrices have the same size
-            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D());
-            double[] result = new double[size * size];
-            // Perform element-wise subtraction with loop unrolling
-            unrolledElementWiseOperation(other, result, false);
-            return new Matrix(size, convertTo2D(result));
+            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D()); // Validate that both matrices have the same size
+            double[] result = new double[size * size];                               // Initialize array to store the difference
+            unrolledElementWiseOperation(other, result, false);           // Perform element-wise subtraction with loop unrolling for efficiency
+            return new Matrix(size, convertTo2D(result));                          // Return the difference as a new matrix
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Matrix subtraction failed: " + e.getMessage(), e);
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error during matrix subtraction: " + e.getMessage(), e);
         }
     }
-
     /**
      * Performs element-wise addition or subtraction using loop-unrolling.
      * This improves performance by reducing loop overhead.
@@ -152,18 +141,17 @@ public final class Matrix {
         if (other == null) {
             throw new NullPointerException("Matrix operation failed: Other matrix cannot be null.");
         }
-        if (size != other.size) {
+        if (size != other.size) { // Ensure both matrices are the same size
             throw new IllegalArgumentException("Matrix operation failed: Matrices must be the same size.");
         }
         try {
-            // Loop through the array in steps of 4 for loop-unrolling optimization
-            for (int i = 0; i < size * size; i += 4) {
-                result[i] = isAddition ? this.data[i] + other.data[i] : this.data[i] - other.data[i];
+            for (int i = 0; i < size * size; i += 4) {                                                 // Process four elements at a time for performance
+                result[i] = isAddition ? this.data[i] + other.data[i] : this.data[i] - other.data[i]; // Perform addition or subtraction
                 if (i + 1 < size * size) result[i + 1] = isAddition ? this.data[i + 1] + other.data[i + 1] : this.data[i + 1] - other.data[i + 1];
                 if (i + 2 < size * size) result[i + 2] = isAddition ? this.data[i + 2] + other.data[i + 2] : this.data[i + 2] - other.data[i + 2];
                 if (i + 3 < size * size) result[i + 3] = isAddition ? this.data[i + 3] + other.data[i + 3] : this.data[i + 3] - other.data[i + 3];
             }
-        } catch (Exception e) {
+        } catch (Exception e) { // Catch any unexpected errors
             throw new RuntimeException("Error during matrix operation: " + e.getMessage(), e);
         }
     }
@@ -176,11 +164,10 @@ public final class Matrix {
      * @throws RuntimeException If an error occurs while converting the data.
      */
     private double[][] convertTo2D(double[] flatData) {
-        double[][] result = new double[size][size];
+        double[][] result = new double[size][size];                                      // Initialize 2D array with matrix size
         try {
-            for (int i = 0; i < size; i++) {
-                // Copy each row from the 1D storage back into the 2D array
-                System.arraycopy(flatData, i * size, result[i], 0, size);
+            for (int i = 0; i < size; i++) {                                             // Iterate over each row
+                System.arraycopy(flatData, i * size, result[i], 0, size); // Copy each row back into 2D format
             }
         } catch (Exception e) {
             throw new RuntimeException("Error converting 1D matrix to 2D: " + e.getMessage(), e);
@@ -195,7 +182,7 @@ public final class Matrix {
      */
     public void debugPrint() {
         try {
-            System.out.println(this.toString());
+            System.out.println(this.toString()); // Print the matrix using its string representation
         } catch (Exception e) {
             throw new RuntimeException("Error while printing matrix: " + e.getMessage(), e);
         }
@@ -210,16 +197,16 @@ public final class Matrix {
     @Override
     public String toString() {
         try {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Matrix (").append(size).append("x").append(size).append("):\n");
-            for (int i = 0; i < size; i++) {
-                sb.append("| ");
-                for (int j = 0; j < size; j++) {
-                    sb.append(String.format("%6.2f ", data[i * size + j]));
+            StringBuilder sb = new StringBuilder();                                      // Create a StringBuilder for efficient string manipulation
+            sb.append("Matrix (").append(size).append("x").append(size).append("):\n"); // Append matrix dimensions
+            for (int i = 0; i < size; i++) {                                            // Iterate over rows
+                sb.append("| ");                                                        // Start each row with a separator
+                for (int j = 0; j < size; j++) {                                       // Iterate over columns
+                    sb.append(String.format("%6.2f ", data[i * size + j]));            // Format values with two decimal places
                 }
-                sb.append("|\n");
+                sb.append("|\n");                                                      // Close the row with a separator
             }
-            return sb.toString();
+            return sb.toString();                                                       // Return the formatted matrix string
         } catch (Exception e) {
             throw new RuntimeException("Error generating matrix string representation: " + e.getMessage(), e);
         }
@@ -235,11 +222,11 @@ public final class Matrix {
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Matrix)) return false;
+        if (this == obj) return true;                                        // If both objects are the same instance, return true
+        if (!(obj instanceof Matrix)) return false;                          // If the object is not a Matrix, return false
         try {
             Matrix other = (Matrix) obj;
-            return size == other.size && Arrays.equals(this.data, other.data);
+            return size == other.size && Arrays.equals(this.data, other.data); // Compare sizes and data arrays
         } catch (Exception e) {
             throw new RuntimeException("Error comparing matrices: " + e.getMessage(), e);
         }
@@ -255,9 +242,25 @@ public final class Matrix {
     @Override
     public int hashCode() {
         try {
-            return Objects.hash(size, Arrays.hashCode(data));
+            return Objects.hash(size, Arrays.hashCode(data)); // Generate hash based on size and matrix data
         } catch (Exception e) {
             throw new RuntimeException("Error generating hash code: " + e.getMessage(), e);
         }
+    }
+    /**
+     * Creates an n × n zero matrix.
+     *
+     * @param size The size of the square matrix.
+     * @return A new Matrix instance filled with zeros.
+     * @throws IllegalArgumentException If the size is not a power of two or is non-positive.
+     */
+    public static Matrix zeroMatrix(int size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Matrix size must be positive.");
+        }
+        if (!MatrixValidator.isPowerOfTwo(size)) {
+            throw new IllegalArgumentException("Matrix size must be a power of two.");
+        }
+        return new Matrix(size, new double[size][size]); // Initializes a zero matrix
     }
 }
