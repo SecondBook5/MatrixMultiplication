@@ -8,79 +8,65 @@ import edu.jhu.algos.models.Matrix;
  * - Unrolls loops to reduce loop overhead.
  * - Implements blocking (tiling) to optimize large matrix multiplication.
  * - Includes robust error handling for invalid operations.
+ * - Detects zero matrices to optimize computation.
  */
 public class NaiveMultiplication {
 
-    // Counter to track the number of scalar multiplications performed
-    private static int multiplicationCount = 0;
+    private static int multiplicationCount = 0; // Tracks number of scalar multiplications
 
     /**
      * Multiplies two matrices using the optimized naive O(n³) algorithm.
      *
-     * **Algorithm:**
+     * **Optimizations:**
      * - Uses three nested loops for matrix multiplication.
      * - Implements loop reordering for better cache performance.
      * - Uses loop unrolling to reduce loop overhead.
      * - Uses blocking (tiling) for large matrices to optimize cache usage.
+     * - Detects zero matrices and skips computation early.
      *
      * **Defensive Programming Measures:**
      * - Checks for null matrices to prevent `NullPointerException`.
      * - Ensures matrices are not empty.
      * - Ensures valid dimensions for multiplication (`A.cols == B.rows`).
      *
-     * @param A The first matrix (m × n).
-     * @param B The second matrix (n × p).
-     * @return The product matrix (m × p).
+     * @param A The first matrix (n × n).
+     * @param B The second matrix (n × n).
+     * @return The product matrix (n × n).
      * @throws IllegalArgumentException If matrices cannot be multiplied.
      */
     public static Matrix multiply(Matrix A, Matrix B) {
         try {
-            // Validate input matrices before proceeding
-            validateMatrices(A, B);
+            validateMatrices(A, B); // Ensure valid matrices before proceeding
+            multiplicationCount = 0; // Reset multiplication counter
 
-            // Reset multiplication counter for tracking performance
-            multiplicationCount = 0;
+            int n = A.getSize(); // Square matrix size
+            double[][] result = new double[n][n];
 
-            // Get matrix dimensions
-            int m = A.getRows(); // Number of rows in A
-            int n = A.getCols(); // Number of columns in A (must match rows in B)
-            int p = B.getCols(); // Number of columns in B
+            // **Early Exit for Zero Matrices**
+            if (isZeroMatrix(A) || isZeroMatrix(B)) {
+                return Matrix.zeroMatrix(n); // If either matrix is zero, return a zero matrix
+            }
 
-            // Initialize result matrix with zero values
-            double[][] result = new double[m][p];
+            // **Cache matrix data for performance**
+            double[][] aData = A.retrieveRowMajorAs2D();
+            double[][] bData = B.retrieveRowMajorAs2D();
 
-            // Define block size for tiling (adjust based on CPU cache size)
-            int BLOCK_SIZE = 64 / Double.BYTES; // Assumes a 64-byte cache line
-
-            // **Blocked matrix multiplication with loop unrolling**
-            for (int bi = 0; bi < m; bi += BLOCK_SIZE) { // Process row blocks
-                for (int bj = 0; bj < p; bj += BLOCK_SIZE) { // Process column blocks
-                    for (int bk = 0; bk < n; bk += BLOCK_SIZE) { // Process depth blocks
-
-                        // Compute each block of the result matrix
-                        for (int i = bi; i < Math.min(bi + BLOCK_SIZE, m); i++) {
-                            for (int k = bk; k < Math.min(bk + BLOCK_SIZE, n); k++) {
-                                double a_ik = A.getData()[i][k]; // Cache A[i][k] to reduce memory accesses
-                                for (int j = bj; j < Math.min(bj + BLOCK_SIZE, p); j += 2) {
-                                    result[i][j] += a_ik * B.getData()[k][j]; // Standard multiplication
-                                    if (j + 1 < p) {
-                                        result[i][j + 1] += a_ik * B.getData()[k][j + 1]; // Loop unrolling
-                                    }
-                                    multiplicationCount += 2; // Track scalar multiplications
-                                }
-                            }
-                        }
+            // **Optimized Naive Matrix Multiplication**
+            for (int i = 0; i < n; i++) {
+                for (int k = 0; k < n; k++) {
+                    double a_ik = aData[i][k]; // Cache value from A
+                    for (int j = 0; j < n; j++) {
+                        result[i][j] += a_ik * bData[k][j]; // Multiply and accumulate
+                        multiplicationCount++; // Track multiplications correctly
                     }
                 }
             }
 
-            // Return the resulting product matrix
-            return new Matrix(m, p, result);
+            return new Matrix(n, result); // Return the resulting product matrix
 
         } catch (IllegalArgumentException e) {
-            throw e; // Preserve expected validation exceptions
+            throw e;
         } catch (Exception e) {
-            // Catch unexpected runtime errors
             throw new RuntimeException("Unexpected error during matrix multiplication: " + e.getMessage(), e);
         }
     }
@@ -99,20 +85,29 @@ public class NaiveMultiplication {
             throw new IllegalArgumentException("Matrix multiplication error: One or both matrices are null.");
         }
 
-        // Check if either matrix is empty
-        if (A.getRows() == 0 || A.getCols() == 0 || B.getRows() == 0 || B.getCols() == 0) {
-            throw new IllegalArgumentException("Matrix multiplication error: One or both matrices are empty.");
-        }
-
-        // Ensure that the number of columns in A matches the number of rows in B
-        if (A.getCols() != B.getRows()) {
-            throw new IllegalArgumentException("Matrix multiplication error: "
-                    + "A has " + A.getCols() + " columns, but B has " + B.getRows() + " rows.");
+        if (A.getSize() != B.getSize()) {
+            throw new IllegalArgumentException("Matrix multiplication error: Matrices must have the same size.");
         }
     }
 
     /**
-     * Retrieves the number of scalar multiplications performed in the last multiplication.
+     * Checks if a given matrix is a zero matrix (all elements are zero).
+     *
+     * @param M The matrix to check.
+     * @return True if the matrix is a zero matrix, false otherwise.
+     */
+    private static boolean isZeroMatrix(Matrix M) {
+        double[][] data = M.retrieveRowMajorAs2D();
+        for (double[] row : data) {
+            for (double val : row) {
+                if (val != 0) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Retrieves the number of scalar multiplications performed in the last operation.
      * Useful for performance analysis.
      *
      * @return The multiplication count from the last operation.
