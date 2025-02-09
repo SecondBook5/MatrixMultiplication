@@ -4,94 +4,86 @@ import edu.jhu.algos.utils.MatrixValidator;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * Represents a square matrix (n × n) with fundamental operations.
- * Uses row-major storage for cache efficiency.
- * Implements defensive programming with centralized error handling.
- */
 public final class Matrix {
-    private final int size; // Size of the square matrix (n × n)
-    private final double[] data; // 1D array for row-major storage
+    private final int size;
+    private final double[] data;
 
-    /**
-     * Constructs an n × n matrix and validates input.
-     * Stores matrix in row-major order for performance benefits.
-     *
-     * @param size The size of the square matrix (must be a power of two).
-     * @param data A 2D array representing the matrix elements.
-     * @throws IllegalArgumentException If the matrix is not valid.
-     */
     public Matrix(int size, double[][] data) {
+        if (data == null) {
+            throw new NullPointerException("Matrix initialization failed: Data array cannot be null.");
+        }
         try {
             MatrixValidator.validateSquareMatrix(size, size);
             MatrixValidator.validateMatrix(size, size, data);
             MatrixValidator.validatePowerOfTwoSize(size);
 
             this.size = size;
-            this.data = new double[size * size]; // 1D storage for row-major order
-
-            // Store elements row by row
-            for (int i = 0; i < size; i++) {
-                System.arraycopy(data[i], 0, this.data, i * size, size);
-            }
+            this.data = new double[size * size];
+            storeInRowMajor(data);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Matrix initialization failed: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Matrix initialization failed: " + e.getMessage(), e);
+            throw new RuntimeException("Unexpected error initializing matrix: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieves the 2D matrix representation from the row-major stored data.
-     *
-     * @return A 2D array representation of the matrix.
-     */
-    public double[][] retrieveAs2D() {
-        double[][] result = new double[size][size];
+    private void storeInRowMajor(double[][] data) {
         for (int i = 0; i < size; i++) {
-            System.arraycopy(this.data, i * size, result[i], 0, size);
+            System.arraycopy(data[i], 0, this.data, i * size, size);
+        }
+    }
+
+    public double[][] retrieveRowMajorAs2D() {
+        double[][] result = new double[size][size];
+        try {
+            for (int i = 0; i < size; i++) {
+                System.arraycopy(this.data, i * size, result[i], 0, size);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving 2D matrix representation: " + e.getMessage(), e);
         }
         return result;
     }
 
-    /**
-     * Adds two matrices element-wise using loop-unrolling for performance.
-     * Supports method chaining.
-     *
-     * @param other The matrix to add.
-     * @return A new matrix containing the sum.
-     */
     public Matrix add(Matrix other) {
-        MatrixValidator.validateMatrix(size, size, other.retrieveAs2D());
-        double[] result = new double[size * size];
-        elementWiseOperation(other, result, true);
-        return new Matrix(size, convertTo2D(result)); // Supports method chaining.
+        if (other == null) {
+            throw new NullPointerException("Matrix addition failed: Other matrix cannot be null.");
+        }
+        try {
+            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D());
+            double[] result = new double[size * size];
+            unrolledElementWiseOperation(other, result, true);
+            return new Matrix(size, convertTo2D(result));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Matrix addition failed: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error during matrix addition: " + e.getMessage(), e);
+        }
     }
 
-    /**
-     * Subtracts another matrix element-wise using loop-unrolling for performance.
-     * Supports method chaining.
-     *
-     * @param other The matrix to subtract.
-     * @return A new matrix containing the difference.
-     */
     public Matrix subtract(Matrix other) {
-        MatrixValidator.validateMatrix(size, size, other.retrieveAs2D());
-        double[] result = new double[size * size];
-        elementWiseOperation(other, result, false);
-        return new Matrix(size, convertTo2D(result)); // Supports method chaining.
+        if (other == null) {
+            throw new NullPointerException("Matrix subtraction failed: Other matrix cannot be null.");
+        }
+        try {
+            MatrixValidator.validateMatrix(size, size, other.retrieveRowMajorAs2D());
+            double[] result = new double[size * size];
+            unrolledElementWiseOperation(other, result, false);
+            return new Matrix(size, convertTo2D(result));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Matrix subtraction failed: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error during matrix subtraction: " + e.getMessage(), e);
+        }
     }
 
-    /**
-     * Performs element-wise operations (addition or subtraction) using loop-unrolling.
-     *
-     * **Loop-unrolling explanation:**
-     * - Instead of iterating one element at a time, we process **four elements per loop**.
-     * - Reduces loop overhead and improves CPU cache efficiency.
-     *
-     * @param other The matrix to operate on.
-     * @param result The array storing computed values.
-     * @param isAddition Determines whether to add or subtract elements.
-     */
-    private void elementWiseOperation(Matrix other, double[] result, boolean isAddition) {
+    private void unrolledElementWiseOperation(Matrix other, double[] result, boolean isAddition) {
+        if (other == null) {
+            throw new NullPointerException("Matrix operation failed: Other matrix cannot be null.");
+        }
+        if (size != other.size) {
+            throw new IllegalArgumentException("Matrix operation failed: Matrices must be the same size.");
+        }
         try {
             for (int i = 0; i < size * size; i += 4) {
                 result[i] = isAddition ? this.data[i] + other.data[i] : this.data[i] - other.data[i];
@@ -104,68 +96,62 @@ public final class Matrix {
         }
     }
 
-    /**
-     * Converts a 1D row-major stored matrix back to a 2D array.
-     *
-     * @param flatData The 1D row-major stored matrix.
-     * @return A 2D representation of the matrix.
-     */
     private double[][] convertTo2D(double[] flatData) {
         double[][] result = new double[size][size];
-        for (int i = 0; i < size; i++) {
-            System.arraycopy(flatData, i * size, result[i], 0, size);
+        try {
+            for (int i = 0; i < size; i++) {
+                System.arraycopy(flatData, i * size, result[i], 0, size);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error converting 1D matrix to 2D: " + e.getMessage(), e);
         }
         return result;
     }
 
-    /**
-     * Prints the matrix for debugging.
-     */
     public void debugPrint() {
-        System.out.println(this.toString());
+        try {
+            System.out.println(this.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("Error while printing matrix: " + e.getMessage(), e);
+        }
     }
 
-    /**
-     * Returns a formatted string representation of the matrix.
-     *
-     * @return A string representation of the matrix.
-     */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Matrix (" + size + "x" + size + "):\n");
-        for (int i = 0; i < size; i++) {
-            sb.append("| ");
-            for (int j = 0; j < size; j++) {
-                sb.append(String.format("%6.2f ", data[i * size + j]));
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Matrix (").append(size).append("x").append(size).append("):\n");
+            for (int i = 0; i < size; i++) {
+                sb.append("| ");
+                for (int j = 0; j < size; j++) {
+                    sb.append(String.format("%6.2f ", data[i * size + j]));
+                }
+                sb.append("|\n");
             }
-            sb.append("|\n");
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating matrix string representation: " + e.getMessage(), e);
         }
-        return sb.toString();
     }
 
-    /**
-     * Computes the hash code for the matrix.
-     *
-     * @return The hash code of the matrix.
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(size, Arrays.hashCode(data));
-    }
-
-    /**
-     * Checks if this matrix is equal to another matrix.
-     * Two matrices are equal if they have the same size and identical data.
-     *
-     * @param obj The object to compare.
-     * @return True if matrices are equal, false otherwise.
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof Matrix)) return false;
-        Matrix other = (Matrix) obj;
-        return size == other.size && Arrays.equals(this.data, other.data);
+        try {
+            Matrix other = (Matrix) obj;
+            return size == other.size && Arrays.equals(this.data, other.data);
+        } catch (Exception e) {
+            throw new RuntimeException("Error comparing matrices: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        try {
+            return Objects.hash(size, Arrays.hashCode(data));
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating hash code: " + e.getMessage(), e);
+        }
     }
 }
