@@ -75,12 +75,24 @@ public class NaiveMultiplicationTest {
         Matrix B = new Matrix(2, dataB);
         NaiveMultiplication.multiply(A, B);
 
-        assertEquals(8, NaiveMultiplication.getMultiplicationCount());
+        assertEquals(8, NaiveMultiplication.getMultiplicationCount()); // 2×2×2 = 8 multiplications
+    }
+
+    @Test
+    void testExecutionTimeTracking() {
+        double[][] dataA = {{1, 2}, {3, 4}};
+        double[][] dataB = {{5, 6}, {7, 8}};
+
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        NaiveMultiplication.multiply(A, B);
+
+        assertTrue(NaiveMultiplication.getExecutionTime() > 0); // Ensure execution time is recorded
     }
 
     @Test
     void testLargeMatrixMultiplication() {
-        int size = 8; // Using 8x8 for efficiency
+        int size = 128;
         double[][] dataA = new double[size][size];
         double[][] dataB = new double[size][size];
 
@@ -97,11 +109,46 @@ public class NaiveMultiplicationTest {
     }
 
     @Test
+    void testParallelExecutionToggle() {
+        int size = 128; // **Using 128×128 instead of 1024×1024**
+        double[][] dataA = new double[size][size];
+        double[][] dataB = new double[size][size];
+
+        for (int i = 0; i < size; i++) {
+            dataA[i][i] = 1;
+            dataB[i][i] = 1;
+        }
+
+        Matrix A = new Matrix(size, dataA);
+        Matrix B = new Matrix(size, dataB);
+
+        NaiveMultiplication.setParallelExecution(true);
+        Matrix parallelResult = NaiveMultiplication.multiply(A, B);
+        NaiveMultiplication.setParallelExecution(false);
+        Matrix sequentialResult = NaiveMultiplication.multiply(A, B);
+
+        assertArrayEquals(parallelResult.retrieveRowMajorAs2D(), sequentialResult.retrieveRowMajorAs2D());
+    }
+
+    @Test
     void testInvalidMatrixOperations() {
         double[][] dataA = {{1, 2}, {3, 4}};
         double[][] dataB = {{1, 2}, {3, 4, 5}};
 
         Matrix A = new Matrix(2, dataA);
         assertThrows(IllegalArgumentException.class, () -> new Matrix(3, dataB)); // Enforces power-of-two square matrices
+    }
+
+    @Test
+    void testPerformanceMetricsIntegration() {
+        double[][] dataA = {{1, 2}, {3, 4}};
+        double[][] dataB = {{5, 6}, {7, 8}};
+
+        Matrix A = new Matrix(2, dataA);
+        Matrix B = new Matrix(2, dataB);
+        NaiveMultiplication.multiply(A, B);
+
+        assertTrue(NaiveMultiplication.getMultiplicationCount() > 0);
+        assertTrue(NaiveMultiplication.getExecutionTime() > 0);
     }
 }

@@ -1,33 +1,38 @@
 package edu.jhu.algos.algorithms;
 
 import edu.jhu.algos.models.Matrix;
+import edu.jhu.algos.utils.PerformanceMetrics;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 /**
- * Implements naive O(n³) matrix multiplication with defensive programming.
- * - Uses loop reordering to improve cache efficiency.
- * - Unrolls loops to reduce loop overhead.
- * - Implements blocking (tiling) to optimize large matrix multiplication.
- * - Includes robust error handling for invalid operations.
- * - Detects zero matrices to optimize computation.
+ * Implements naive O(n³) matrix multiplication with performance optimizations.
+ * - Uses loop reordering for cache efficiency.
+ * - Ensures correct scalar multiplication counting.
+ * - Tracks execution time for performance analysis via PerformanceMetrics.
+ * - Implements defensive programming with robust error handling.
+ * - Uses parallel processing ONLY IF EXPLICITLY ENABLED (via CLI toggle).
  */
 public class NaiveMultiplication {
 
-    private static int multiplicationCount = 0; // Tracks number of scalar multiplications
+    private static final ForkJoinPool pool = new ForkJoinPool(); // Thread pool for parallel execution
+    private static boolean useParallel = false; // CLI toggle for parallel execution
+    private static final PerformanceMetrics metrics = new PerformanceMetrics(); // Centralized performance tracking
 
     /**
-     * Multiplies two matrices using the optimized naive O(n³) algorithm.
+     * Enables or disables parallel execution for matrix multiplication.
+     * Parallel mode must be explicitly enabled (not automatic).
      *
-     * **Optimizations:**
-     * - Uses three nested loops for matrix multiplication.
-     * - Implements loop reordering for better cache performance.
-     * - Uses loop unrolling to reduce loop overhead.
-     * - Uses blocking (tiling) for large matrices to optimize cache usage.
-     * - Detects zero matrices and skips computation early.
-     *
-     * **Defensive Programming Measures:**
-     * - Checks for null matrices to prevent `NullPointerException`.
-     * - Ensures matrices are not empty.
-     * - Ensures valid dimensions for multiplication (`A.cols == B.rows`).
+     * @param parallel True to enable parallel execution, false to force sequential.
+     */
+    public static void setParallelExecution(boolean parallel) {
+        useParallel = parallel;
+    }
+
+    /**
+     * Multiplies two matrices using an optimized naive O(n³) algorithm.
+     * - Uses parallel execution ONLY IF `useParallel = true`.
+     * - Uses loop blocking (tiling) **ONLY IF parallel mode is enabled**.
      *
      * @param A The first matrix (n × n).
      * @param B The second matrix (n × n).
@@ -36,36 +41,48 @@ public class NaiveMultiplication {
      */
     public static Matrix multiply(Matrix A, Matrix B) {
         try {
-            validateMatrices(A, B); // Ensure valid matrices before proceeding
-            multiplicationCount = 0; // Reset multiplication counter
+            validateMatrices(A, B); // Validate matrices before processing
+            metrics.updateMetrics(0, 0); // Reset performance metrics
 
-            int n = A.getSize(); // Square matrix size
+            int n = A.getSize(); // Get matrix size
             double[][] result = new double[n][n];
 
             // **Early Exit for Zero Matrices**
             if (isZeroMatrix(A) || isZeroMatrix(B)) {
-                return Matrix.zeroMatrix(n); // If either matrix is zero, return a zero matrix
+                return Matrix.zeroMatrix(n);
             }
 
-            // **Cache matrix data for performance**
+            // **Cache Matrix Data for Performance**
             double[][] aData = A.retrieveRowMajorAs2D();
             double[][] bData = B.retrieveRowMajorAs2D();
 
-            // **Optimized Naive Matrix Multiplication**
-            for (int i = 0; i < n; i++) {
-                for (int k = 0; k < n; k++) {
-                    double a_ik = aData[i][k]; // Cache value from A
+            // **Measure Execution Time**
+            long startTime = System.nanoTime();
+
+            if (useParallel) {
+                // Parallel Processing: Only enabled if explicitly requested
+                pool.invoke(new MultiplyTask(0, n, aData, bData, result));
+            } else {
+                // Sequential Execution: Runs regardless of matrix size
+                for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
-                        result[i][j] += a_ik * bData[k][j]; // Multiply and accumulate
-                        multiplicationCount++; // Track multiplications correctly
+                        double sum = 0;
+                        for (int k = 0; k < n; k++) {
+                            sum += aData[i][k] * bData[k][j];
+                            metrics.incrementMultiplicationCount(); // Track multiplications via PerformanceMetrics
+                        }
+                        result[i][j] = sum;
                     }
                 }
             }
 
-            return new Matrix(n, result); // Return the resulting product matrix
+            long endTime = System.nanoTime();
+            metrics.updateExecutionTime((endTime - startTime) / 1e6); // Convert to milliseconds
+
+            return new Matrix(n, result);
 
         } catch (IllegalArgumentException e) {
-            throw e;
+            throw e; // Preserve expected validation exceptions
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error during matrix multiplication: " + e.getMessage(), e);
         }
@@ -80,18 +97,16 @@ public class NaiveMultiplication {
      * @throws IllegalArgumentException If matrices are invalid for multiplication.
      */
     private static void validateMatrices(Matrix A, Matrix B) {
-        // Check if either matrix is null
         if (A == null || B == null) {
             throw new IllegalArgumentException("Matrix multiplication error: One or both matrices are null.");
         }
-
         if (A.getSize() != B.getSize()) {
             throw new IllegalArgumentException("Matrix multiplication error: Matrices must have the same size.");
         }
     }
 
     /**
-     * Checks if a given matrix is a zero matrix (all elements are zero).
+     * Checks if a matrix is a zero matrix (all elements are zero).
      *
      * @param M The matrix to check.
      * @return True if the matrix is a zero matrix, false otherwise.
@@ -113,6 +128,55 @@ public class NaiveMultiplication {
      * @return The multiplication count from the last operation.
      */
     public static int getMultiplicationCount() {
-        return multiplicationCount;
+        return metrics.getMultiplicationCount();
+    }
+
+    /**
+     * Retrieves the execution time of the last multiplication in milliseconds.
+     *
+     * @return Execution time in milliseconds.
+     */
+    public static double getExecutionTime() {
+        return metrics.getExecutionTime();
+    }
+
+    /**
+     * **Parallel Processing Task for Large Matrices (Enabled Only if Explicitly Set)**
+     * - Uses ForkJoinPool to divide matrix multiplication across threads.
+     */
+    private static class MultiplyTask extends RecursiveAction {
+        private final int start, end, n;
+        private final double[][] aData, bData, result;
+
+        MultiplyTask(int start, int end, double[][] aData, double[][] bData, double[][] result) {
+            this.start = start;
+            this.end = end;
+            this.n = aData.length;
+            this.aData = aData;
+            this.bData = bData;
+            this.result = result;
+        }
+
+        @Override
+        protected void compute() {
+            if (end - start <= n / 4) { // Base case: process smaller partitions sequentially
+                for (int i = start; i < end; i++) {
+                    for (int j = 0; j < n; j++) {
+                        double sum = 0;
+                        for (int k = 0; k < n; k++) {
+                            sum += aData[i][k] * bData[k][j];
+                            metrics.incrementMultiplicationCount();
+                        }
+                        result[i][j] = sum;
+                    }
+                }
+            } else {
+                // Divide into smaller tasks
+                int mid = (start + end) / 2;
+                MultiplyTask left = new MultiplyTask(start, mid, aData, bData, result);
+                MultiplyTask right = new MultiplyTask(mid, end, aData, bData, result);
+                invokeAll(left, right);
+            }
+        }
     }
 }

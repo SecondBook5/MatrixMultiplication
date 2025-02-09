@@ -29,6 +29,23 @@ public class PerformanceMetrics {
     }
 
     /**
+     * Increments the multiplication count by one.
+     * Used for tracking individual scalar multiplications.
+     */
+    public void incrementMultiplicationCount() {
+        this.multiplicationCount++;
+    }
+
+    /**
+     * Updates only the execution time without modifying the multiplication count.
+     *
+     * @param executionTime The execution time in milliseconds.
+     */
+    public void updateExecutionTime(double executionTime) {
+        this.executionTime = executionTime;
+    }
+
+    /**
      * Prints the performance results for easy comparison.
      *
      * @param algorithmName The name of the algorithm being benchmarked (e.g., "Naive", "Strassen").
