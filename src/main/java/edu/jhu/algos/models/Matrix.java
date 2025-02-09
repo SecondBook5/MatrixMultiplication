@@ -5,267 +5,167 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Represents a general m × n matrix with fundamental operations.
- * Uses `MatrixValidator` for input validation and includes performance optimizations.
- *
- * - Supports both square (n × n) and non-square (m × n) matrices.
- * - Implements loop unrolling for improved performance in addition and subtraction.
- * - Ensures immutability with controlled deep copies.
- * - Implements defensive programming with robust error handling.
+ * Represents a square matrix (n × n) with fundamental operations.
+ * Uses row-major storage for cache efficiency.
+ * Implements defensive programming with centralized error handling.
  */
 public final class Matrix {
-    // Number of rows in the matrix
-    private final int rows;
-
-    // Number of columns in the matrix
-    private final int cols;
-
-    // The 2D array representing matrix data (marked final for immutability)
-    private final double[][] data;
+    private final int size; // Size of the square matrix (n × n)
+    private final double[] data; // 1D array for row-major storage
 
     /**
-     * Constructs an m × n matrix and validates its input.
-     * Uses `MatrixValidator` to check for valid dimensions.
+     * Constructs an n × n matrix and validates input.
+     * Stores matrix in row-major order for performance benefits.
      *
-     * @param rows Number of rows (m).
-     * @param cols Number of columns (n).
+     * @param size The size of the square matrix (must be a power of two).
      * @param data A 2D array representing the matrix elements.
-     * @throws IllegalArgumentException If dimensions or data are invalid.
+     * @throws IllegalArgumentException If the matrix is not valid.
      */
-    public Matrix(int rows, int cols, double[][] data) {
+    public Matrix(int size, double[][] data) {
         try {
-            // Validate input dimensions and ensure non-null data
-            MatrixValidator.validateMatrix(rows, cols, data);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Matrix construction failed: " + e.getMessage(), e);
-        }
+            MatrixValidator.validateSquareMatrix(size, size);
+            MatrixValidator.validateMatrix(size, size, data);
+            MatrixValidator.validatePowerOfTwoSize(size);
 
-        // Assign number of rows and columns
-        this.rows = rows;
-        this.cols = cols;
+            this.size = size;
+            this.data = new double[size * size]; // 1D storage for row-major order
 
-        // Store a deep copy of the matrix to enforce immutability
-        this.data = deepCopy(data);
-    }
-
-    /**
-     * Returns true if the matrix is square (n × n).
-     *
-     * @return True if square, false otherwise.
-     */
-    public boolean isSquare() {
-        return rows == cols;
-    }
-
-    /**
-     * Returns true if the matrix is both square and a power of two in size.
-     * This is required for Strassen’s Algorithm.
-     *
-     * @return True if the matrix size is a power of two, false otherwise.
-     */
-    public boolean isPowerOfTwoSquare() {
-        return isSquare() && MatrixValidator.isPowerOfTwo(rows);
-    }
-
-    /**
-     * Creates a deep copy of the matrix data to prevent external modification.
-     *
-     * @param source The original matrix data.
-     * @return A new independent 2D array copy.
-     */
-    private double[][] deepCopy(double[][] source) {
-        try {
-            double[][] copy = new double[rows][cols];
-
-            // Use System.arraycopy() for optimized copying of each row
-            for (int i = 0; i < rows; i++) {
-                System.arraycopy(source[i], 0, copy[i], 0, cols);
+            // Store elements row by row
+            for (int i = 0; i < size; i++) {
+                System.arraycopy(data[i], 0, this.data, i * size, size);
             }
-            return copy;
         } catch (Exception e) {
-            throw new RuntimeException("Deep copy of matrix data failed: " + e.getMessage(), e);
+            throw new RuntimeException("Matrix initialization failed: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Returns the number of rows in the matrix.
+     * Retrieves the 2D matrix representation from the row-major stored data.
      *
-     * @return Number of rows.
+     * @return A 2D array representation of the matrix.
      */
-    public int getRows() {
-        return rows;
+    public double[][] retrieveAs2D() {
+        double[][] result = new double[size][size];
+        for (int i = 0; i < size; i++) {
+            System.arraycopy(this.data, i * size, result[i], 0, size);
+        }
+        return result;
     }
 
     /**
-     * Returns the number of columns in the matrix.
-     *
-     * @return Number of columns.
-     */
-    public int getCols() {
-        return cols;
-    }
-
-    /**
-     * Returns a reference to the matrix data (for read-only access).
-     *
-     * @return The matrix data (immutable reference).
-     */
-    public double[][] getData() {
-        return data;
-    }
-
-    /**
-     * Returns a deep copy of the matrix data for safe external modification.
-     *
-     * @return A new deep copy of the matrix data.
-     */
-    public double[][] getDataCopy() {
-        return deepCopy(data);
-    }
-
-    /**
-     * Adds two matrices element-wise with optimized loop unrolling.
-     *
-     * **Loop Unrolling Optimization:**
-     * - Instead of iterating element-by-element (`j++`), we process **four elements at a time (`j += 4`)**.
-     * - This reduces **loop overhead** and **improves CPU cache efficiency**.
-     * - If the number of columns is not a multiple of 4, the remaining elements are handled separately.
+     * Adds two matrices element-wise using loop-unrolling for performance.
+     * Supports method chaining.
      *
      * @param other The matrix to add.
-     * @return A new matrix containing the sum of both matrices.
-     * @throws IllegalArgumentException If matrices have different sizes.
+     * @return A new matrix containing the sum.
      */
     public Matrix add(Matrix other) {
-        try {
-            // Validate that both matrices have the same dimensions
-            MatrixValidator.validateMatrix(rows, cols, other.getData());
-
-            // Initialize the result matrix
-            double[][] result = new double[rows][cols];
-
-            // Perform element-wise addition with loop unrolling (4-way)
-            for (int i = 0; i < rows; i++) {
-                int j = 0;
-
-                // **Process four elements at a time (main loop for efficiency)**
-                for (; j <= cols - 4; j += 4) {
-                    result[i][j] = this.data[i][j] + other.data[i][j];
-                    result[i][j + 1] = this.data[i][j + 1] + other.data[i][j + 1];
-                    result[i][j + 2] = this.data[i][j + 2] + other.data[i][j + 2];
-                    result[i][j + 3] = this.data[i][j + 3] + other.data[i][j + 3];
-                }
-
-                // **Handle remaining elements (if `cols` is not a multiple of 4)**
-                for (; j < cols; j++) {
-                    result[i][j] = this.data[i][j] + other.data[i][j];
-                }
-            }
-
-            // Return the new matrix containing the summed values
-            return new Matrix(rows, cols, result);
-
-        } catch (IllegalArgumentException e) {
-            throw e; // Preserve the original exception type (expected behavior)
-        } catch (Exception e) {
-            throw new RuntimeException("Unexpected error during matrix addition: " + e.getMessage(), e);
-        }
+        MatrixValidator.validateMatrix(size, size, other.retrieveAs2D());
+        double[] result = new double[size * size];
+        elementWiseOperation(other, result, true);
+        return new Matrix(size, convertTo2D(result)); // Supports method chaining.
     }
 
     /**
-     * Subtracts another matrix element-wise with optimized loop unrolling.
-     *
-     * **Loop Unrolling Optimization:**
-     * - Similar to `add()`, we process four elements at a time to improve performance.
-     * - If `cols` is not a multiple of 4, remaining elements are handled separately.
+     * Subtracts another matrix element-wise using loop-unrolling for performance.
+     * Supports method chaining.
      *
      * @param other The matrix to subtract.
      * @return A new matrix containing the difference.
-     * @throws IllegalArgumentException If matrices have different sizes.
      */
     public Matrix subtract(Matrix other) {
+        MatrixValidator.validateMatrix(size, size, other.retrieveAs2D());
+        double[] result = new double[size * size];
+        elementWiseOperation(other, result, false);
+        return new Matrix(size, convertTo2D(result)); // Supports method chaining.
+    }
+
+    /**
+     * Performs element-wise operations (addition or subtraction) using loop-unrolling.
+     *
+     * **Loop-unrolling explanation:**
+     * - Instead of iterating one element at a time, we process **four elements per loop**.
+     * - Reduces loop overhead and improves CPU cache efficiency.
+     *
+     * @param other The matrix to operate on.
+     * @param result The array storing computed values.
+     * @param isAddition Determines whether to add or subtract elements.
+     */
+    private void elementWiseOperation(Matrix other, double[] result, boolean isAddition) {
         try {
-            // Validate that both matrices have the same dimensions
-            MatrixValidator.validateMatrix(rows, cols, other.getData());
-
-            // Initialize the result matrix
-            double[][] result = new double[rows][cols];
-
-            // Perform element-wise subtraction with loop unrolling (4-way)
-            for (int i = 0; i < rows; i++) {
-                int j = 0;
-
-                // **Process four elements at a time (main loop for efficiency)**
-                for (; j <= cols - 4; j += 4) {
-                    result[i][j] = this.data[i][j] - other.data[i][j];
-                    result[i][j + 1] = this.data[i][j + 1] - other.data[i][j + 1];
-                    result[i][j + 2] = this.data[i][j + 2] - other.data[i][j + 2];
-                    result[i][j + 3] = this.data[i][j + 3] - other.data[i][j + 3];
-                }
-
-                // **Handle remaining elements (if `cols` is not a multiple of 4)**
-                for (; j < cols; j++) {
-                    result[i][j] = this.data[i][j] - other.data[i][j];
-                }
+            for (int i = 0; i < size * size; i += 4) {
+                result[i] = isAddition ? this.data[i] + other.data[i] : this.data[i] - other.data[i];
+                if (i + 1 < size * size) result[i + 1] = isAddition ? this.data[i + 1] + other.data[i + 1] : this.data[i + 1] - other.data[i + 1];
+                if (i + 2 < size * size) result[i + 2] = isAddition ? this.data[i + 2] + other.data[i + 2] : this.data[i + 2] - other.data[i + 2];
+                if (i + 3 < size * size) result[i + 3] = isAddition ? this.data[i + 3] + other.data[i + 3] : this.data[i + 3] - other.data[i + 3];
             }
-
-            // Return the new matrix containing the difference values
-            return new Matrix(rows, cols, result);
-
-        } catch (IllegalArgumentException e) {
-            throw e; // Preserve the original exception type (expected behavior)
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error during matrix subtraction: " + e.getMessage(), e);
+            throw new RuntimeException("Error during matrix operation: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Provides a formatted string representation of the matrix for easy debugging.
+     * Converts a 1D row-major stored matrix back to a 2D array.
      *
-     * **Format Example:**
-     * ```
-     * |  1.00  2.00 |
-     * |  3.00  4.00 |
-     * ```
+     * @param flatData The 1D row-major stored matrix.
+     * @return A 2D representation of the matrix.
+     */
+    private double[][] convertTo2D(double[] flatData) {
+        double[][] result = new double[size][size];
+        for (int i = 0; i < size; i++) {
+            System.arraycopy(flatData, i * size, result[i], 0, size);
+        }
+        return result;
+    }
+
+    /**
+     * Prints the matrix for debugging.
+     */
+    public void debugPrint() {
+        System.out.println(this.toString());
+    }
+
+    /**
+     * Returns a formatted string representation of the matrix.
      *
-     * @return A formatted string representation of the matrix.
+     * @return A string representation of the matrix.
      */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-
-        for (double[] row : data) {
-            sb.append("| "); // Start each row with "| "
-
-            for (int j = 0; j < row.length; j++) {
-                sb.append(String.format("%5.2f", row[j])); // Fixed width (5 spaces, 2 decimal places)
-                if (j < row.length - 1) {
-                    sb.append(" "); // Add space only between numbers
-                }
+        sb.append("Matrix (" + size + "x" + size + "):\n");
+        for (int i = 0; i < size; i++) {
+            sb.append("| ");
+            for (int j = 0; j < size; j++) {
+                sb.append(String.format("%6.2f ", data[i * size + j]));
             }
-
-            sb.append(" |\n"); // Close row with " |" and newline
+            sb.append("|\n");
         }
-
-        return sb.toString().trim(); // Trim trailing spaces or newlines
+        return sb.toString();
     }
 
+    /**
+     * Computes the hash code for the matrix.
+     *
+     * @return The hash code of the matrix.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(size, Arrays.hashCode(data));
+    }
 
     /**
-     * Ensures proper matrix equality comparison by manually checking rows.
+     * Checks if this matrix is equal to another matrix.
+     * Two matrices are equal if they have the same size and identical data.
+     *
+     * @param obj The object to compare.
+     * @return True if matrices are equal, false otherwise.
      */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof Matrix)) return false;
         Matrix other = (Matrix) obj;
-        return rows == other.rows && cols == other.cols && Arrays.deepEquals(this.data, other.data);
-    }
-
-    /**
-     * Generates a hash code for the matrix using row-wise hashing.
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(rows, cols, Arrays.deepHashCode(data));
+        return size == other.size && Arrays.equals(this.data, other.data);
     }
 }
