@@ -59,11 +59,10 @@ public class NaiveMultiplication {
             // **Measure Execution Time**
             long startTime = System.nanoTime();
 
-            if (useParallel) {
-                // Parallel Processing: Only enabled if explicitly requested
+            if (useParallel && n >= 128) { // Parallel processing only for large matrices
                 pool.invoke(new MultiplyTask(0, n, aData, bData, result));
             } else {
-                // Sequential Execution: Runs regardless of matrix size
+                // Sequential Execution
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
                         double sum = 0;
@@ -159,7 +158,7 @@ public class NaiveMultiplication {
 
         @Override
         protected void compute() {
-            if (end - start <= n / 4) { // Base case: process smaller partitions sequentially
+            if ((end - start) <= Math.max(64, n / 8)) { // Adjusted stopping condition
                 for (int i = start; i < end; i++) {
                     for (int j = 0; j < n; j++) {
                         double sum = 0;
@@ -175,7 +174,10 @@ public class NaiveMultiplication {
                 int mid = (start + end) / 2;
                 MultiplyTask left = new MultiplyTask(start, mid, aData, bData, result);
                 MultiplyTask right = new MultiplyTask(mid, end, aData, bData, result);
-                invokeAll(left, right);
+
+                left.fork();  // Fork left task
+                right.compute();  // Compute right task in current thread
+                left.join();  // Join left task
             }
         }
     }

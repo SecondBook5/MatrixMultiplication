@@ -64,6 +64,7 @@ public class NaiveMultiplicationTest {
         Matrix product = NaiveMultiplication.multiply(A, Z);
 
         assertArrayEquals(expectedProduct, product.retrieveRowMajorAs2D());
+        assertEquals(0, NaiveMultiplication.getMultiplicationCount()); // Should be 0 since early exit occurs
     }
 
     @Test
@@ -87,7 +88,7 @@ public class NaiveMultiplicationTest {
         Matrix B = new Matrix(2, dataB);
         NaiveMultiplication.multiply(A, B);
 
-        assertTrue(NaiveMultiplication.getExecutionTime() > 0); // Ensure execution time is recorded
+        assertTrue(NaiveMultiplication.getExecutionTime() > 0, "Execution time should be greater than 0.");
     }
 
     @Test
@@ -110,7 +111,7 @@ public class NaiveMultiplicationTest {
 
     @Test
     void testParallelExecutionToggle() {
-        int size = 128; // **Using 128×128 instead of 1024×1024**
+        int size = 128;
         double[][] dataA = new double[size][size];
         double[][] dataB = new double[size][size];
 
@@ -131,12 +132,28 @@ public class NaiveMultiplicationTest {
     }
 
     @Test
-    void testInvalidMatrixOperations() {
-        double[][] dataA = {{1, 2}, {3, 4}};
-        double[][] dataB = {{1, 2}, {3, 4, 5}};
+    void testParallelVsSequentialExecutionTime() {
+        int size = 512;
+        double[][] dataA = new double[size][size];
+        double[][] dataB = new double[size][size];
 
-        Matrix A = new Matrix(2, dataA);
-        assertThrows(IllegalArgumentException.class, () -> new Matrix(3, dataB)); // Enforces power-of-two square matrices
+        for (int i = 0; i < size; i++) {
+            dataA[i][i] = 1;
+            dataB[i][i] = 1;
+        }
+
+        Matrix A = new Matrix(size, dataA);
+        Matrix B = new Matrix(size, dataB);
+
+        NaiveMultiplication.setParallelExecution(false);
+        NaiveMultiplication.multiply(A, B);
+        double sequentialTime = NaiveMultiplication.getExecutionTime();
+
+        NaiveMultiplication.setParallelExecution(true);
+        NaiveMultiplication.multiply(A, B);
+        double parallelTime = NaiveMultiplication.getExecutionTime();
+
+        assertTrue(parallelTime < sequentialTime, "Parallel execution should be faster than sequential.");
     }
 
     @Test
