@@ -2,173 +2,180 @@ package edu.jhu.algos.test.utils;
 
 import edu.jhu.algos.models.Matrix;
 import edu.jhu.algos.utils.MatrixFileHandler;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for MatrixFileHandler class.
- * - Tests reading matrices from various file formats.
- * - Ensures error handling for invalid input files.
- * - Verifies that matrices are correctly written to output files.
+ * Unit tests for MatrixFileHandler.
+ * Ensures proper reading and writing of matrix files, along with error handling.
  */
 public class MatrixFileHandlerTest {
 
-    private static final String TEST_FILE = "test_matrices.txt"; // Temporary test file
+    private static final String TEST_INPUT_FILE = "input/test_matrix.txt";
+    private static final String TEST_OUTPUT_FILE = "output/test_matrix_output.txt";
 
     /**
-     * Tests reading matrices from a correctly formatted structured file.
-     * Validates that matrix pairs are read correctly.
+     * Sets up test directories before running tests.
+     * Ensures input and output folders exist.
+     */
+    @BeforeEach
+    void setUp() throws IOException {
+        Files.createDirectories(Path.of("input"));
+        Files.createDirectories(Path.of("output"));
+    }
+
+    /**
+     * Cleans up test files after running tests.
+     */
+    @AfterEach
+    void tearDown() throws IOException {
+        Files.deleteIfExists(Path.of(TEST_INPUT_FILE));
+        Files.deleteIfExists(Path.of(TEST_OUTPUT_FILE));
+    }
+
+    /**
+     * Tests successful reading of a valid matrix file.
+     * Expected: Properly parsed matrix from file.
      */
     @Test
-    void testReadMatricesFromFile() throws IOException {
-        String content = """
+    void testReadValidMatrixFile() throws IOException {
+        String matrixContent = """
                 2
-                1 2
-                3 4
-                5 6
-                7 8
-
-                3
-                1 2 3
-                4 5 6
-                7 8 9
-                10 11 12
-                13 14 15
-                16 17 18
+                1.0 2.0
+                3.0 4.0
                 """;
-        writeTestFile(content);
+        Files.writeString(Path.of(TEST_INPUT_FILE), matrixContent);
 
-        List<Matrix[]> matrices = MatrixFileHandler.readMatricesFromFile(TEST_FILE);
-
-        assertEquals(2, matrices.size()); // Expecting 2 matrix pairs
-        assertEquals(2, matrices.get(0)[0].getRows()); // First matrix size should be 2x2
-        assertEquals(3, matrices.get(1)[0].getRows()); // Second matrix size should be 3x3
+        List<Matrix> matrices = MatrixFileHandler.readMatrices("test_matrix.txt");
+        assertEquals(1, matrices.size(), "Expected 1 matrix in file.");
+        assertEquals(2, matrices.get(0).getSize(), "Matrix size should be 2x2.");
     }
 
     /**
-     * Tests reading a CSV-formatted matrix file.
-     * Ensures that comma-separated values are correctly parsed.
+     * Tests handling of a missing file.
+     * Expected: IOException with proper message.
      */
     @Test
-    void testReadCSVMatrixFile() throws IOException {
-        String content = """
+    void testReadMissingFile() {
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.readMatrices("non_existent_file.txt");
+        });
+        assertTrue(exception.getMessage().contains("Input file not found"), "Expected file not found error.");
+    }
+
+    /**
+     * Tests handling of an empty file.
+     * Expected: IOException with proper message.
+     */
+    @Test
+    void testReadEmptyFile() throws IOException {
+        Files.writeString(Path.of(TEST_INPUT_FILE), "");
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.readMatrices("test_matrix.txt");
+        });
+        assertTrue(exception.getMessage().contains("does not contain any valid matrices"), "Expected empty file error.");
+    }
+
+    /**
+     * Tests handling of an invalid matrix (wrong row size).
+     * Expected: IOException due to mismatch between declared and actual row size.
+     */
+    @Test
+    void testReadInvalidMatrixRowSize() throws IOException {
+        String matrixContent = """
                 2
-                1,2
-                3,4
-                5,6
-                7,8
+                1.0 2.0 3.0
+                4.0 5.0
                 """;
-        writeTestFile(content);
+        Files.writeString(Path.of(TEST_INPUT_FILE), matrixContent);
 
-        List<Matrix[]> matrices = MatrixFileHandler.readMatricesFromFile(TEST_FILE);
-
-        assertEquals(1, matrices.size()); // Expecting 1 matrix pair
-        assertEquals(2, matrices.get(0)[0].getRows()); // Matrix size should be 2x2
-        assertEquals(5.0, matrices.get(0)[1].getData(true)[0][0]); // Verify first element of matrix B
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.readMatrices("test_matrix.txt");
+        });
+        assertTrue(exception.getMessage().contains("Row length mismatch"), "Expected row size mismatch error.");
     }
 
     /**
-     * Tests reading a JSON-like matrix file.
-     * Ensures JSON-style `[ [1,2], [3,4] ]` input is correctly parsed.
+     * Tests handling of a non-numeric matrix value.
+     * Expected: IOException due to invalid numeric value.
      */
     @Test
-    void testReadJsonMatrixFile() throws IOException {
-        String content = """
-                [[1,2],[3,4]]
-                [[5,6],[7,8]]
-                """;
-        writeTestFile(content);
-
-        List<Matrix[]> matrices = MatrixFileHandler.readMatricesFromFile(TEST_FILE);
-
-        assertEquals(1, matrices.size()); // Expecting 1 matrix pair
-        assertEquals(1.0, matrices.get(0)[0].getData(true)[0][0]); // Verify first element of matrix A
-        assertEquals(6.0, matrices.get(0)[1].getData(true)[0][1]); // Verify first row, second column of matrix B
-    }
-
-    /**
-     * Tests reading a flat file format (without explicit matrix size).
-     * The matrix size should be inferred dynamically.
-     */
-    @Test
-    void testReadFlatFileMatrix() throws IOException {
-        String content = """
-                1 2
-                3 4
-
-                5 6
-                7 8
-                """;
-        writeTestFile(content);
-
-        List<Matrix[]> matrices = MatrixFileHandler.readMatricesFromFile(TEST_FILE);
-
-        assertEquals(1, matrices.size()); // Expecting 1 matrix pair
-        assertEquals(2, matrices.get(0)[0].getRows()); // Matrix size should be 2x2
-        assertEquals(7.0, matrices.get(0)[1].getData(true)[1][0]); // Verify second row, first column of matrix B
-    }
-
-    /**
-     * Tests error handling for an invalid matrix format.
-     * Ensures that the parser throws an `IllegalArgumentException` for a malformed file.
-     */
-    @Test
-    void testInvalidMatrixFormat() throws IOException {
-        String content = """
-                3
-                1 2
-                4 5 6
-                """;
-        writeTestFile(content);
-
-        assertThrows(IllegalArgumentException.class, () -> MatrixFileHandler.readMatricesFromFile(TEST_FILE));
-    }
-
-    /**
-     * Tests error handling for an invalid numeric entry.
-     * Ensures that a matrix with non-numeric values is correctly rejected.
-     */
-    @Test
-    void testInvalidNumericEntry() throws IOException {
-        String content = """
+    void testReadInvalidNumericValue() throws IOException {
+        String matrixContent = """
                 2
-                1 2
-                X 4
-                5 6
-                7 8
+                1.0 2.0
+                3.0 X
                 """;
-        writeTestFile(content);
+        Files.writeString(Path.of(TEST_INPUT_FILE), matrixContent);
 
-        assertThrows(IllegalArgumentException.class, () -> MatrixFileHandler.readMatricesFromFile(TEST_FILE));
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.readMatrices("test_matrix.txt");
+        });
+        assertTrue(exception.getMessage().contains("Invalid numeric value"), "Expected non-numeric value error.");
     }
 
     /**
-     * Tests writing a matrix to a file.
-     * Ensures that the output file correctly stores the matrix.
+     * Tests handling of an invalid file extension (should only accept `.txt`).
+     * Expected: IOException due to unsupported file type.
      */
     @Test
-    void testWriteMatrixToFile() throws IOException {
-        Matrix matrix = new Matrix(2, 2, new double[][]{{1, 2}, {3, 4}});
-        MatrixFileHandler.writeMatrixToFile(matrix, TEST_FILE);
-
-        BufferedReader reader = new BufferedReader(new FileReader(TEST_FILE));
-        assertNotNull(reader.readLine()); // Ensure the file is not empty
-        reader.close();
+    void testInvalidFileExtension() {
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.readMatrices("test_matrix.csv");
+        });
+        assertTrue(exception.getMessage().contains("Invalid file format"), "Expected invalid file format error.");
     }
 
     /**
-     * Writes a test file with the provided content.
-     *
-     * @param content The string content to write to the file.
-     * @throws IOException If writing fails.
+     * Tests successful writing of a matrix to an output file.
+     * Expected: Properly formatted matrix written to file.
      */
-    private void writeTestFile(String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(TEST_FILE));
-        writer.write(content);
-        writer.close();
+    @Test
+    void testWriteMatrixFile() throws IOException {
+        double[][] data = {{1.1, 2.2}, {3.3, 4.4}};
+        Matrix matrix = new Matrix(2, data);
+
+        MatrixFileHandler.writeMatrix(matrix, "test_matrix_output.txt");
+
+        assertTrue(Files.exists(Path.of(TEST_OUTPUT_FILE)), "Expected output file to be created.");
+
+        List<String> lines = Files.readAllLines(Path.of(TEST_OUTPUT_FILE));
+        assertEquals(3, lines.size(), "Expected 3 lines in the output file (size + 2 rows).");
+        assertEquals("2", lines.get(0), "First line should be matrix size.");
+    }
+
+    /**
+     * Tests handling of writing to an invalid output file format.
+     * Expected: IOException due to unsupported file type.
+     */
+    @Test
+    void testWriteInvalidFileExtension() {
+        double[][] data = {{1, 2}, {3, 4}};
+        Matrix matrix = new Matrix(2, data);
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            MatrixFileHandler.writeMatrix(matrix, "test_output.csv");
+        });
+        assertTrue(exception.getMessage().contains("Invalid file format"), "Expected invalid file format error.");
+    }
+
+    /**
+     * Tests that the output directory is created if it doesn't exist.
+     * Expected: The directory should be automatically created.
+     */
+    @Test
+    void testEnsureOutputDirectoryExists() throws IOException {
+        Files.deleteIfExists(Path.of("output"));
+        MatrixFileHandler.writeMatrix(new Matrix(2, new double[][]{{1, 2}, {3, 4}}), "test_matrix_output.txt");
+        assertTrue(Files.exists(Path.of("output")), "Expected output directory to be created.");
     }
 }
