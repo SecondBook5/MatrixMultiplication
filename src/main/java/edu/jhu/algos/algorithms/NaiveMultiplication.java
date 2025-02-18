@@ -40,7 +40,10 @@ public class NaiveMultiplication implements MatrixMultiplier {
         }
 
         // Reset all metrics: time and multiplication count
+        System.out.println("Resetting metrics before multiplication...");
         metrics.resetAll();
+        System.out.println("Multiplication count after reset: " + metrics.getMultiplicationCount());
+
         metrics.startTimer(); // Start timing
 
         int n = A.getSize();             // The dimension of the matrices
@@ -55,6 +58,10 @@ public class NaiveMultiplication implements MatrixMultiplier {
                     int bVal = B.get(k, j);        // Cache B[k, j]
                     sum += aVal * bVal;            // Multiply and sum
                     metrics.incrementMultiplicationCount(); // Track scalar multiplication
+
+                    // Debugging: Print after every multiplication
+                    System.out.println("Multiplication (" + i + ", " + j + ", " + k + ") | A: " + aVal + " * B: " + bVal +
+                            " | Total Count: " + metrics.getMultiplicationCount());
                 }
                 result.set(i, j, sum); // Store computed sum
             }
@@ -62,10 +69,9 @@ public class NaiveMultiplication implements MatrixMultiplier {
 
         metrics.stopTimer(); // Stop timing
 
-        // Optional Debug Output (Remove in final version)
-        // System.out.println("NaiveMultiplication | Size: " + n +
-        //                   " | Time: " + getElapsedTimeMs() + " ms" +
-        //                   " | Multiplications: " + getMultiplicationCount());
+        // Debugging: Final multiplication count check
+        System.out.println("Final Multiplication Count: " + metrics.getMultiplicationCount());
+        System.out.println("Total Time: " + metrics.getElapsedTimeMs() + " ms");
 
         return result;
     }
@@ -77,7 +83,9 @@ public class NaiveMultiplication implements MatrixMultiplier {
      */
     @Override
     public long getMultiplicationCount() {
-        return metrics.getMultiplicationCount();
+        long count = metrics.getMultiplicationCount();
+        System.out.println("Retrieving Multiplication Count: " + count);
+        return count;
     }
 
     /**
@@ -86,6 +94,8 @@ public class NaiveMultiplication implements MatrixMultiplier {
      */
     @Override
     public long getElapsedTimeMs() {
-        return metrics.getElapsedTimeMs();
+        long time = metrics.getElapsedTimeMs();
+        System.out.println("Retrieving Elapsed Time: " + time + " ms");
+        return time;
     }
 }

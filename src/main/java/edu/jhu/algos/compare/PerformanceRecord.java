@@ -30,8 +30,8 @@ public class PerformanceRecord {
      * @param naiveConstant Estimated constant for O(n^3) using curve fitting.
      * @param strassenConstant Estimated constant for O(n^2.8074) using curve fitting.
      */
-    public PerformanceRecord(int n, long naiveTimeMs, long strassenTimeMs,
-                             long naiveMultiplications, long strassenMultiplications,
+    public PerformanceRecord(int n, long naiveTimeMs, long naiveMultiplications,
+                             long strassenTimeMs, long strassenMultiplications,
                              double naiveConstant, double strassenConstant) {
         this.n = n;
         this.naiveTimeMs = naiveTimeMs;
@@ -40,7 +40,11 @@ public class PerformanceRecord {
         this.strassenMultiplications = strassenMultiplications;
         this.naiveConstant = naiveConstant;
         this.strassenConstant = strassenConstant;
+
+        // Debugging to track exact values
+        System.out.println("DEBUG: PerformanceRecord Created - Naive Multiplications = " + naiveMultiplications);
     }
+
 
     // Getters for all fields (ensures immutability)
     public int getSize() { return n; }

@@ -39,6 +39,11 @@ public class ComparisonDriver {
             MatrixFileHandler fileHandler = new MatrixFileHandler();
             List<Matrix[]> pairs = fileHandler.readMatrixPairs(inputFile); // Read (A, B) pairs
 
+            if (pairs.isEmpty()) {
+                details.append("Warning: No valid matrix pairs found in file: ").append(inputFile).append("\n");
+                return new ComparisonResult(details.toString(), records);
+            }
+
             for (int i = 0; i < pairs.size(); i++) {
                 Matrix A = pairs.get(i)[0];
                 Matrix B = pairs.get(i)[1];
@@ -54,22 +59,38 @@ public class ComparisonDriver {
                 // Run Naive Multiplication
                 MultiplicationResult naiveResult = runMultiplication(new NaiveMultiplication(), A, B, "Naive");
                 details.append(naiveResult.output);
+                System.out.println("DEBUG: Retrieved Naive Multiplications = " + naiveResult.multiplications); // Debugging
 
                 // Run Strassen Multiplication
                 MultiplicationResult strassenResult = runMultiplication(new StrassenMultiplication(), A, B, "Strassen");
                 details.append(strassenResult.output);
+                System.out.println("DEBUG: Retrieved Strassen Multiplications = " + strassenResult.multiplications); // Debugging
 
                 // Compare outputs for correctness
                 boolean same = MatrixUtils.compareMatrices(naiveResult.result, strassenResult.result);
                 details.append("Naive vs. Strassen same? ").append(same).append("\n")
                         .append("====================================================\n\n");
 
+                // Compute Big-O constants using CurveFitter
+                List<PerformanceRecord> tempRecords = new ArrayList<>(records);  // Temporary list for estimation
+                tempRecords.add(new PerformanceRecord(n, naiveResult.timeMs, naiveResult.multiplications,
+                        strassenResult.timeMs, strassenResult.multiplications, 0, 0)); // Dummy constants
+
+                double naiveConstant = CurveFitter.fitConstant(tempRecords, 3.0, true);
+                double strassenConstant = CurveFitter.fitConstant(tempRecords, Math.log(7) / Math.log(2), false);
+
                 // Store performance data
-                records.add(new PerformanceRecord(n, naiveResult.timeMs, strassenResult.timeMs, naiveResult.multiplications, strassenResult.multiplications));
+                System.out.println("DEBUG: Storing PerformanceRecord with Naive Multiplications = " + naiveResult.multiplications);
+                records.add(new PerformanceRecord(n, naiveResult.timeMs, naiveResult.multiplications,
+                        strassenResult.timeMs, strassenResult.multiplications, naiveConstant, strassenConstant));
+
+                // Debugging after storing
+                System.out.println("DEBUG: Retrieved from records - Naive Multiplications = " + records.get(records.size() - 1).getNaiveMultiplications());
+
             }
 
         } catch (IOException e) {
-            details.append("I/O Error: ").append(e.getMessage()).append("\n");
+            details.append("I/O Error while processing file '").append(inputFile).append("': ").append(e.getMessage()).append("\n");
         }
 
         return new ComparisonResult(details.toString(), records);
@@ -85,9 +106,16 @@ public class ComparisonDriver {
      * @return MultiplicationResult object containing the result matrix, time, and multiplications.
      */
     private static MultiplicationResult runMultiplication(MatrixMultiplier multiplier, Matrix A, Matrix B, String methodName) {
+        System.out.println("Running " + methodName + " multiplication...");
+
         Matrix result = multiplier.multiply(A, B);  // Perform multiplication
         long timeMs = multiplier.getElapsedTimeMs();  // Get execution time
         long multiplications = multiplier.getMultiplicationCount();  // Get multiplication count
+
+        // Debugging prints
+        System.out.println(methodName + " Multiplication Done");
+        System.out.println("Time taken: " + timeMs + " ms");
+        System.out.println("Multiplications counted: " + multiplications);
 
         // Generate formatted output
         StringBuilder output = new StringBuilder();

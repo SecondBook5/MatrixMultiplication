@@ -70,8 +70,10 @@ public class PerformanceMetrics {
      * </p>
      */
     public void incrementMultiplicationCount() {
-        this.multiplicationCount++; // Increase count by 1
+        multiplicationCount++;
+        System.out.println("Multiplication count updated: " + multiplicationCount);
     }
+
 
     /**
      * Adds a specified amount to the current multiplication counter.
