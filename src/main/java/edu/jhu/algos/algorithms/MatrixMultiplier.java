@@ -1,76 +1,39 @@
-//package edu.jhu.algos.algorithms;
-//
-//import edu.jhu.algos.models.Matrix;
-//import edu.jhu.algos.utils.PerformanceMetrics;
-//
-///**
-// * Abstract class providing shared functionality for matrix multiplication methods.
-// * - Tracks execution time and multiplication counts.
-// * - Handles validation of matrices before multiplication.
-// */
-//public abstract class MatrixMultiplier {
-//
-//    protected final PerformanceMetrics metrics = new PerformanceMetrics(); // Performance tracker
-//
-//    /**
-//     * Tracks execution time for matrix multiplication.
-//     *
-//     * @param A The first matrix.
-//     * @param B The second matrix.
-//     * @return The result matrix after multiplication.
-//     */
-//    public final Matrix multiply(Matrix A, Matrix B) {
-//        validateMatrices(A, B); // Validate matrices before processing
-//        metrics.resetMetrics(); // Reset performance metrics
-//
-//        long startTime = System.nanoTime(); // Start timing
-//        Matrix result = performMultiplication(A, B);
-//        long endTime = System.nanoTime(); // End timing
-//
-//        metrics.updateExecutionTime((endTime - startTime) / 1e6); // Convert to milliseconds
-//        return result;
-//    }
-//
-//    /**
-//     * Implemented by subclasses to define multiplication logic.
-//     *
-//     * @param A The first matrix.
-//     * @param B The second matrix.
-//     * @return The resulting matrix.
-//     */
-//    protected abstract Matrix performMultiplication(Matrix A, Matrix B);
-//
-//    /**
-//     * Validates input matrices before multiplication.
-//     *
-//     * @param A The first matrix.
-//     * @param B The second matrix.
-//     * @throws IllegalArgumentException If matrices are invalid for multiplication.
-//     */
-//    protected void validateMatrices(Matrix A, Matrix B) {
-//        if (A == null || B == null) {
-//            throw new IllegalArgumentException("Matrix multiplication error: One or both matrices are null.");
-//        }
-//        if (A.getSize() != B.getSize()) {
-//            throw new IllegalArgumentException("Matrix multiplication error: Matrices must have the same size.");
-//        }
-//    }
-//
-//    /**
-//     * Retrieves the number of scalar multiplications performed in the last operation.
-//     *
-//     * @return The multiplication count from the last operation.
-//     */
-//    public int getMultiplicationCount() {
-//        return metrics.getMultiplicationCount();
-//    }
-//
-//    /**
-//     * Retrieves the execution time of the last multiplication in milliseconds.
-//     *
-//     * @return Execution time in milliseconds.
-//     */
-//    public double getExecutionTime() {
-//        return metrics.getExecutionTime();
-//    }
-//}
+package edu.jhu.algos.algorithms;
+
+import edu.jhu.algos.models.Matrix;
+
+/**
+ * Provides a contract for multiplying two square matrices of size 2^n x 2^n.
+ * <p>
+ * Implementations (e.g., NaiveMultiplication, StrassenMultiplication) must:
+ * 1) Perform the multiplication in their preferred manner,
+ * 2) Track the scalar multiplication count,
+ * 3) Track the elapsed time of the multiply() call.
+ * </p>
+ */
+public interface MatrixMultiplier {
+
+    /**
+     * Multiplies two matrices A and B and returns the resulting matrix.
+     * @param A The first matrix (2^n x 2^n).
+     * @param B The second matrix (2^n x 2^n).
+     * @return The product matrix A x B.
+     * @throws IllegalArgumentException if the sizes of A and B don't match
+     *         or if they are invalid for multiplication.
+     */
+    Matrix multiply(Matrix A, Matrix B);
+
+    /**
+     * Retrieves the total number of scalar multiplications performed
+     * during the most recent multiply() operation.
+     * @return The multiplication count from the last multiply() call.
+     */
+    long getMultiplicationCount();
+
+    /**
+     * Retrieves the elapsed time (in milliseconds) spent in the most recent
+     * multiply() operation.
+     * @return The elapsed time in ms from the last multiply() call.
+     */
+    long getElapsedTimeMs();
+}

@@ -1,122 +1,159 @@
 package edu.jhu.algos.utils;
 
+import edu.jhu.algos.models.Matrix;
+
 /**
- * Provides utility methods to validate matrix properties.
- *
- * This class ensures that matrices conform to expected constraints such as:
- * - Proper dimensions (`m × n` size matches given data).
- * - Squareness (`n × n` for Strassen’s Algorithm).
- * - Power-of-two sizes (`2^k × 2^k` for Strassen’s Algorithm compatibility).
+ * Provides validation methods for matrix operations.
+ * Ensures matrices meet constraints like size, bounds, and compatibility.
  */
 public class MatrixValidator {
 
     /**
-     * Validates that the provided matrix has correct dimensions.
-     *
-     * **Checks:**
-     * 1. The matrix data is **not null**.
-     * 2. The matrix has exactly `rows` rows.
-     * 3. Each row has exactly `cols` columns.
-     *
-     * **Edge Cases Handled:**
-     * - Throws an exception if `data` is null.
-     * - Throws an exception if row count is incorrect.
-     * - Throws an exception if any row has incorrect column size.
-     *
-     * @param rows Expected number of rows.
-     * @param cols Expected number of columns.
-     * @param data The matrix data to validate.
-     * @throws IllegalArgumentException If the matrix is null, improperly sized, or inconsistent.
-     */
-    public static void validateMatrix(int rows, int cols, double[][] data) {
-        // Step 1: Ensure data is not null
-        if (data == null) {
-            throw new IllegalArgumentException("Matrix data cannot be null.");
-        }
-
-        // Step 2: Ensure the matrix has the correct number of rows
-        if (data.length != rows) {
-            throw new IllegalArgumentException(
-                    "Expected " + rows + " rows but found " + data.length
-            );
-        }
-
-        // Step 3: Ensure each row has the correct number of columns
-        for (int i = 0; i < rows; i++) {
-            if (data[i] == null || data[i].length != cols) {
-                throw new IllegalArgumentException(
-                        "Row " + i + " must have exactly " + cols + " columns."
-                );
-            }
-        }
-    }
-
-    /**
-     * Checks if a matrix is square (`n × n`).
-     *
-     * **Why?**
-     * Some matrix operations, such as Strassen’s Algorithm, require square matrices.
-     *
-     * **Edge Cases Handled:**
-     * - If the matrix is not square, an exception is thrown.
-     *
-     * @param rows Number of rows.
-     * @param cols Number of columns.
-     * @throws IllegalArgumentException If the matrix is not square.
-     */
-    public static void validateSquareMatrix(int rows, int cols) {
-        // A square matrix must have the same number of rows and columns
-        if (rows != cols) {
-            throw new IllegalArgumentException(
-                    "Matrix must be square (`n × n`), but got " + rows + " × " + cols
-            );
-        }
-    }
-
-    /**
-     * Checks if a square matrix has a power-of-two size (`2^k × 2^k`).
-     *
-     * **Why?**
-     * - Strassen’s Algorithm only works efficiently when `n` is a power of two.
-     * - If `n` is not a power of two, we may need to **pad the matrix**.
-     *
-     * **Edge Cases Handled:**
-     * - If the size is not a power of two, an exception is thrown.
-     *
-     * @param size The size of the square matrix (must be `n` in `n × n`).
-     * @throws IllegalArgumentException If the size is not a power of two.
-     */
-    public static void validatePowerOfTwoSize(int size) {
-        // Use the isPowerOfTwo() method to check if the size is a power of two
-        if (!isPowerOfTwo(size)) {
-            throw new IllegalArgumentException(
-                    "Matrix size must be a power of two, but got " + size
-            );
-        }
-    }
-
-    /**
-     * Determines whether a given number is a power of two.
-     *
-     * **How It Works:**
-     * - A power of two in binary has exactly **one bit set** (e.g., 1, 2, 4, 8 → `0001`, `0010`, `0100`, `1000`).
-     * - Subtracting `1` from a power of two **flips all lower bits to `1`**.
-     * - The **bitwise AND (`n & (n - 1)`)** removes the lowest set bit.
-     * - If `n & (n - 1) == 0`, then `n` is a power of two.
-     *
-     * **Edge Cases Handled:**
-     * - Returns `false` for `n ≤ 0` (negative numbers and zero are not powers of two).
-     *
+     * Checks if a number is a power of 2.
      * @param n The number to check.
-     * @return True if `n` is a power of two, otherwise false.
+     * @return True if n is a power of 2, otherwise false.
      */
     public static boolean isPowerOfTwo(int n) {
-        // Ensure n is greater than zero (negative numbers and zero are not powers of two)
-        if (n <= 0) {
-            return false;
-        }
+        return (n & (n - 1)) == 0 && n > 0; // Uses bitwise trick: Powers of 2 have only one bit set
+    }
 
-        // Check if n is a power of two using bitwise AND trick
-        return (n & (n - 1)) == 0;
+    /**
+     * Ensures a matrix is not null or empty.
+     * @param matrix The matrix to check.
+     * @return True if matrix is not null and has at least one row.
+     */
+    public static boolean isNonEmptyMatrix(int[][] matrix) {
+        return matrix != null && matrix.length > 0; // Ensures matrix exists and isn't empty
+    }
+
+    /**
+     * Checks if a matrix is square (equal rows and columns).
+     * @param matrix The matrix to check.
+     * @return True if matrix is square, false otherwise.
+     */
+    public static boolean isSquareMatrix(int[][] matrix) {
+        return isNonEmptyMatrix(matrix) && matrix.length == matrix[0].length; // Ensures row count matches column count
+    }
+
+    /**
+     * Checks if two matrices have the same size.
+     * Used for operations like addition, subtraction.
+     * @param A First matrix.
+     * @param B Second matrix.
+     * @return True if both matrices have the same size, false otherwise.
+     */
+    public static boolean isSameSize(Matrix A, Matrix B) {
+        return A.getSize() == B.getSize(); // Ensures both matrices have identical dimensions
+    }
+
+    /**
+     * Checks if a matrix is valid (square and its size is a power of 2).
+     * @param matrix The 2D array representing the matrix.
+     * @return True if the matrix is valid, false otherwise.
+     */
+    public static boolean isValidMatrix(int[][] matrix) {
+        return isNonEmptyMatrix(matrix) && isSquareMatrix(matrix) && isPowerOfTwo(matrix.length);
+        // Ensures matrix is non-empty, square, and size is power of 2
+    }
+
+    /**
+     * Checks if a given index is within matrix bounds.
+     * @param row The row index.
+     * @param col The column index.
+     * @param size The matrix size.
+     * @return True if the index is valid, false otherwise.
+     */
+    public static boolean isValidIndex(int row, int col, int size) {
+        return row >= 0 && row < size && col >= 0 && col < size;
+        // Ensures row and column indices are within matrix bounds
+    }
+
+    /**
+     * Checks if a submatrix extraction is valid.
+     * Ensures the submatrix does not exceed original matrix bounds.
+     * @param rowOffset The starting row index.
+     * @param colOffset The starting column index.
+     * @param newSize The size of the submatrix.
+     * @param matrixSize The size of the original matrix.
+     * @return True if the submatrix extraction is valid, false otherwise.
+     */
+    public static boolean isValidSubMatrix(int rowOffset, int colOffset, int newSize, int matrixSize) {
+        return rowOffset >= 0 && colOffset >= 0 &&
+                rowOffset + newSize <= matrixSize && colOffset + newSize <= matrixSize;
+        // Ensures submatrix does not go out of bounds
+    }
+
+    /**
+     * Checks if a matrix is a zero matrix (all elements are 0).
+     * @param matrix The matrix to check.
+     * @return True if all elements are zero, false otherwise.
+     */
+    public static boolean isZeroMatrix(Matrix matrix) {
+        int[][] data = matrix.getData(); // Get matrix data
+        for (int[] row : data) { // Iterate over rows
+            for (int val : row) { // Iterate over columns
+                if (val != 0) {
+                    return false; // If any value is not zero, return false
+                }
+            }
+        }
+        return true; // If all values are zero, return true
+    }
+
+    /**
+     * Checks if a matrix is an identity matrix (diagonal elements are 1, others are 0).
+     * @param matrix The matrix to check.
+     * @return True if the matrix is an identity matrix, false otherwise.
+     */
+    public static boolean isIdentityMatrix(Matrix matrix) {
+        int size = matrix.getSize(); // Get matrix size
+        int[][] data = matrix.getData(); // Get matrix data
+
+        for (int i = 0; i < size; i++) { // Iterate through rows
+            for (int j = 0; j < size; j++) { // Iterate through columns
+                if (i == j && data[i][j] != 1) { // Diagonal elements should be 1
+                    return false;
+                } else if (i != j && data[i][j] != 0) { // Non-diagonal elements should be 0
+                    return false;
+                }
+            }
+        }
+        return true; // If all conditions match, return true
+    }
+
+    /**
+     * Checks if a matrix contains only positive integers.
+     * @param matrix The matrix to check.
+     * @return True if all elements are positive, false otherwise.
+     */
+    public static boolean isPositiveMatrix(Matrix matrix) {
+        int[][] data = matrix.getData(); // Get matrix data
+        for (int[] row : data) { // Iterate over rows
+            for (int val : row) { // Iterate over columns
+                if (val <= 0) {
+                    return false; // If any value is non-positive, return false
+                }
+            }
+        }
+        return true; // If all values are positive, return true
+    }
+
+    /**
+     * Checks if a matrix is symmetric (A[i][j] == A[j][i] for all elements).
+     * @param matrix The matrix to check.
+     * @return True if symmetric, false otherwise.
+     */
+    public static boolean isSymmetric(Matrix matrix) {
+        int size = matrix.getSize(); // Get matrix size
+        int[][] data = matrix.getData(); // Get matrix data
+
+        for (int i = 0; i < size; i++) { // Iterate through rows
+            for (int j = i + 1; j < size; j++) { // Only check upper triangle
+                if (data[i][j] != data[j][i]) { // Symmetric property
+                    return false;
+                }
+            }
+        }
+        return true; // If all checks pass, return true
     }
 }

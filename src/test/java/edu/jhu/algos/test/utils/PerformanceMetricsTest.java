@@ -6,99 +6,157 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the PerformanceMetrics class.
- *
- * Ensures:
- * - Correct initialization of metrics.
- * - Proper updates to multiplication count and execution time.
- * - Accurate retrieval of performance data.
- * - Correct behavior of incrementing multiplication count.
+ * Ensures correct handling of timing, multiplication counting,
+ * and invalid usage scenarios.
  */
-public class PerformanceMetricsTest {
+class PerformanceMetricsTest {
 
     /**
-     * Tests the default initialization of PerformanceMetrics.
-     * Expected: multiplicationCount = 0, executionTime = 0.0
+     * Tests startTimer() and stopTimer() usage,
+     * verifying that elapsed time is captured.
      */
     @Test
-    void testInitialization() {
+    void testTimingValidUsage() {
         PerformanceMetrics metrics = new PerformanceMetrics();
-        assertEquals(0, metrics.getMultiplicationCount(), "Multiplication count should be initialized to 0.");
-        assertEquals(0.0, metrics.getExecutionTime(), "Execution time should be initialized to 0.0 ms.");
+
+        // Call startTimer() before the operation
+        metrics.startTimer();
+
+        // Simulate some short operation
+        for (int i = 0; i < 1000000; i++) {
+            // Doing some trivial loop to use a little time
+        }
+
+        // Stop timer
+        metrics.stopTimer();
+
+        // Check that getElapsedTimeMs() is > 0
+        // since we definitely spent some time in the loop
+        assertTrue(metrics.getElapsedTimeMs() > 0,
+                "Elapsed time should be greater than zero after a small loop.");
     }
 
     /**
-     * Tests updating performance metrics and verifies correct storage.
+     * Tests that calling stopTimer() without startTimer()
+     * throws an IllegalStateException.
      */
     @Test
-    void testUpdateMetrics() {
+    void testStopTimerWithoutStart() {
         PerformanceMetrics metrics = new PerformanceMetrics();
-        metrics.updateMetrics(120, 5.67); // Update values
+        // We do NOT call metrics.startTimer() here
 
-        assertEquals(120, metrics.getMultiplicationCount(), "Multiplication count should be updated correctly.");
-        assertEquals(5.67, metrics.getExecutionTime(), 0.001, "Execution time should be updated correctly.");
+        // Expect an IllegalStateException
+        Exception ex = assertThrows(IllegalStateException.class, metrics::stopTimer);
+        assertTrue(ex.getMessage().contains("stopTimer() invoked without a valid startTimer()"),
+                "Expected error message about stopTimer() being called prematurely.");
     }
 
     /**
-     * Tests retrieving multiplication count after multiple updates.
-     */
-    @Test
-    void testGetMultiplicationCount() {
-        PerformanceMetrics metrics = new PerformanceMetrics();
-        metrics.updateMetrics(250, 10.25);
-        assertEquals(250, metrics.getMultiplicationCount(), "Multiplication count should return the latest update.");
-    }
-
-    /**
-     * Tests retrieving execution time after multiple updates.
-     */
-    @Test
-    void testGetExecutionTime() {
-        PerformanceMetrics metrics = new PerformanceMetrics();
-        metrics.updateMetrics(300, 15.88);
-        assertEquals(15.88, metrics.getExecutionTime(), 0.001, "Execution time should return the latest update.");
-    }
-
-    /**
-     * Tests printing performance results to the console.
-     * (This ensures no exceptions occur during print operation)
-     */
-    @Test
-    void testPrintPerformanceResults() {
-        PerformanceMetrics metrics = new PerformanceMetrics();
-        metrics.updateMetrics(400, 20.42);
-
-        // Expecting no exception when calling the print method
-        assertDoesNotThrow(() -> metrics.printPerformanceResults("Naive Algorithm"));
-    }
-
-    /**
-     * Tests incrementing multiplication count.
-     * Ensures that the count increases correctly.
+     * Tests incrementMultiplicationCount() and getMultiplicationCount().
      */
     @Test
     void testIncrementMultiplicationCount() {
         PerformanceMetrics metrics = new PerformanceMetrics();
 
-        // Increment count multiple times
-        metrics.incrementMultiplicationCount();
-        metrics.incrementMultiplicationCount();
-        metrics.incrementMultiplicationCount();
+        // Initially should be 0
+        assertEquals(0, metrics.getMultiplicationCount(),
+                "Initial multiplication count should be 0.");
 
-        assertEquals(3, metrics.getMultiplicationCount(), "Multiplication count should correctly increment.");
+        // Increment by 1
+        metrics.incrementMultiplicationCount();
+        assertEquals(1, metrics.getMultiplicationCount(),
+                "After one increment, count should be 1.");
+
+        // Increment multiple times
+        for (int i = 0; i < 9; i++) {
+            metrics.incrementMultiplicationCount();
+        }
+        // Now total should be 10
+        assertEquals(10, metrics.getMultiplicationCount(),
+                "After 10 increments, total count should be 10.");
     }
 
     /**
-     * Tests updating only execution time without affecting multiplication count.
+     * Tests addMultiplications(long amount) with a positive amount.
      */
     @Test
-    void testUpdateExecutionTime() {
+    void testAddMultiplicationsValid() {
         PerformanceMetrics metrics = new PerformanceMetrics();
-        metrics.updateMetrics(100, 5.0); // Initial values
 
-        // Update only execution time
-        metrics.updateExecutionTime(10.5);
+        // Add 5 multiplications
+        metrics.addMultiplications(5);
+        assertEquals(5, metrics.getMultiplicationCount(),
+                "Multiplication count should be 5 after adding 5.");
 
-        assertEquals(100, metrics.getMultiplicationCount(), "Multiplication count should remain unchanged.");
-        assertEquals(10.5, metrics.getExecutionTime(), 0.001, "Execution time should be updated correctly.");
+        // Add 10 more
+        metrics.addMultiplications(10);
+        assertEquals(15, metrics.getMultiplicationCount(),
+                "Multiplication count should be 15 after adding 10 more.");
+    }
+
+    /**
+     * Tests addMultiplications(long amount) with a negative amount,
+     * expecting an IllegalArgumentException.
+     */
+    @Test
+    void testAddMultiplicationsInvalid() {
+        PerformanceMetrics metrics = new PerformanceMetrics();
+
+        // Attempt to add negative number
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> metrics.addMultiplications(-1));
+        assertTrue(ex.getMessage().contains("Cannot add a negative"),
+                "Expected error message about negative multiplications.");
+    }
+
+    /**
+     * Tests resetMultiplicationCount() to ensure it clears the count.
+     */
+    @Test
+    void testResetMultiplicationCount() {
+        PerformanceMetrics metrics = new PerformanceMetrics();
+        // Increment some
+        metrics.addMultiplications(10);
+        assertEquals(10, metrics.getMultiplicationCount(), "Count should be 10.");
+
+        // Now reset just the multiplication count
+        metrics.resetMultiplicationCount();
+        assertEquals(0, metrics.getMultiplicationCount(), "Count should be reset to 0.");
+    }
+
+    /**
+     * Tests resetAll() to ensure it resets both the time and multiplication count.
+     */
+    @Test
+    void testResetAll() {
+        PerformanceMetrics metrics = new PerformanceMetrics();
+
+        // 1) Start/Stop timer
+        metrics.startTimer();
+        metrics.stopTimer(); // Should record some time
+        long timeMs = metrics.getElapsedTimeMs();
+        assertTrue(timeMs >= 0, "Time should be captured here.");
+
+        // 2) Add some multiplication count
+        metrics.addMultiplications(5);
+
+        // Now reset all
+        metrics.resetAll();
+
+        // Timer should be 0 => so getElapsedTimeMs() should be 0
+        assertEquals(0, metrics.getElapsedTimeMs(), "Time should be reset to 0 after resetAll().");
+
+        // Multiplication count should be 0
+        assertEquals(0, metrics.getMultiplicationCount(), "Multiplication count should be reset to 0.");
+    }
+
+    /**
+     * Tests that if we never call stopTimer(), getElapsedTimeMs() returns 0.
+     */
+    @Test
+    void testNoStopTimerTime() {
+        PerformanceMetrics metrics = new PerformanceMetrics();
+        metrics.startTimer(); // no stopTimer() call
+        assertEquals(0, metrics.getElapsedTimeMs(),
+                "Elapsed time should be 0 if stopTimer() was never called.");
     }
 }
