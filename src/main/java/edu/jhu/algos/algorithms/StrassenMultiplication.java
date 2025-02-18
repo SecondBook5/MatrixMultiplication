@@ -6,35 +6,38 @@ import edu.jhu.algos.utils.PerformanceMetrics;
 import edu.jhu.algos.utils.MatrixValidator;
 
 /**
- * Implements Strassen's Algorithm for square matrices of size 2^n x 2^n.
+ * Implements Strassen's Algorithm for square matrix multiplication.
  * <p>
- * The Strassen algorithm recursively splits each matrix into four submatrices,
- * computes 7 intermediate products (M1..M7), then merges them to form the result.
- * Compared to the naive O(n^3) approach, Strassen runs in O(n^(log2(7))) ~ O(n^2.81).
- * </p>
+ * Strassen's Algorithm reduces the multiplication complexity from O(n^3) (Naive) to O(n^(log2(7))) ≈ O(n^2.81).
+ * It recursively splits the matrices into submatrices, computes 7 intermediate matrices (M1..M7),
+ * and then combines them to form the result.
  * <p>
- * This class uses PerformanceMetrics to track:
- * 1) Scalar multiplication count,
- * 2) Elapsed time in milliseconds.
- * </p>
+ * **Key Properties:**
+ * - Works only on square matrices of size 2^n × 2^n.
+ * - More efficient than the naive approach for large matrices, but introduces recursive overhead.
+ * <p>
+ * **Performance Tracking:**
+ * - The number of scalar multiplications performed.
+ * - The total execution time in milliseconds.
  */
 public class StrassenMultiplication implements MatrixMultiplier {
 
-    private final PerformanceMetrics metrics;  // Tracks execution time + multiplication count
+    private final PerformanceMetrics metrics;  // Tracks execution time and multiplication count
 
     /**
      * Default constructor initializes a fresh PerformanceMetrics object
      * for each StrassenMultiplication instance.
      */
     public StrassenMultiplication() {
-        this.metrics = new PerformanceMetrics();  // Initializes performance tracking
+        this.metrics = new PerformanceMetrics();
     }
 
     /**
      * Multiplies two matrices A and B using Strassen's Algorithm.
-     * @param A The first matrix (2^n x 2^n).
-     * @param B The second matrix (2^n x 2^n).
-     * @return A new Matrix containing A x B.
+     *
+     * @param A The first matrix (must be square and a power of 2).
+     * @param B The second matrix (must be square and a power of 2).
+     * @return A new Matrix containing A × B.
      * @throws IllegalArgumentException if A and B are not the same size.
      */
     @Override
@@ -46,6 +49,12 @@ public class StrassenMultiplication implements MatrixMultiplier {
         metrics.resetAll();  // Reset multiplication count and execution time
         metrics.startTimer();  // Start timing the multiplication process
 
+        // Check for zero matrices to avoid unnecessary computation
+        if (MatrixValidator.isZeroMatrix(A) || MatrixValidator.isZeroMatrix(B)) {
+            metrics.stopTimer();
+            return new Matrix(A.getSize());
+        }
+
         Matrix result = strassenRecursive(A, B);  // Recursively compute the product
 
         metrics.stopTimer();  // Stop the timer after multiplication
@@ -55,44 +64,48 @@ public class StrassenMultiplication implements MatrixMultiplier {
     /**
      * Retrieves the number of scalar multiplications performed
      * during the last multiply() call.
+     *
      * @return The multiplication count from PerformanceMetrics.
      */
     @Override
     public long getMultiplicationCount() {
-        return metrics.getMultiplicationCount();  // Return the number of scalar multiplications performed
+        return metrics.getMultiplicationCount();
     }
 
     /**
      * Retrieves the time in milliseconds for the last multiply() call.
-     * @return The elapsed time in ms from PerformanceMetrics.
+     *
+     * @return The elapsed time in milliseconds from PerformanceMetrics.
      */
     @Override
     public long getElapsedTimeMs() {
-        return metrics.getElapsedTimeMs();  // Return execution time in milliseconds
+        return metrics.getElapsedTimeMs();
     }
 
     /**
      * Recursively computes the product of two matrices A and B using Strassen's Algorithm.
+     * <p>
+     * This method follows the recursive breakdown of Strassen's approach:
+     * 1. Split A and B into 4 submatrices each.
+     * 2. Compute 7 intermediate matrices (M1..M7).
+     * 3. Compute the final submatrices of C.
+     * 4. Merge the submatrices into a full result matrix.
+     *
      * @param A The first matrix.
      * @param B The second matrix.
-     * @return The product matrix of A x B.
+     * @return The product matrix A × B.
      */
     private Matrix strassenRecursive(Matrix A, Matrix B) {
         int n = A.getSize();  // Get matrix dimension
 
-        //If either A or B is a zero matrix, return a zero matrix immediately
-        if (MatrixValidator.isZeroMatrix(A) || MatrixValidator.isZeroMatrix(B)) {
-            return new Matrix(n);  // Return zero matrix of size n x n
-        }
-
         // Base case: Direct scalar multiplication for 1x1 matrix
         if (n == 1) {
-            int val = A.get(0, 0) * B.get(0, 0);  // Compute scalar multiplication
+            int val = A.get(0, 0) * B.get(0, 0);
             metrics.incrementMultiplicationCount();  // Count this multiplication
 
             Matrix singleCell = new Matrix(1);  // Create a 1x1 matrix for the result
-            singleCell.set(0, 0, val);  // Set the computed value
-            return singleCell;  // Return the result
+            singleCell.set(0, 0, val);
+            return singleCell;
         }
 
         // Step 1: Split matrices into four submatrices
@@ -112,12 +125,12 @@ public class StrassenMultiplication implements MatrixMultiplier {
         Matrix M6 = strassenRecursive(MatrixOperations.subtract(A21, A11), MatrixOperations.add(B11, B12));
         Matrix M7 = strassenRecursive(MatrixOperations.subtract(A12, A22), MatrixOperations.add(B21, B22));
 
-        // Step 3: Compute final submatrices of C (Reduced nested function calls)
+        // Step 3: Compute final submatrices of C
 
         // Compute C11 = M1 + M4 - M5 + M7
-        Matrix temp1 = MatrixOperations.add(M1, M4);  // (M1 + M4)
-        Matrix temp2 = MatrixOperations.subtract(temp1, M5);  // (M1 + M4 - M5)
-        Matrix C11 = MatrixOperations.add(temp2, M7);  // (M1 + M4 - M5 + M7)
+        Matrix temp1 = MatrixOperations.add(M1, M4);
+        Matrix temp2 = MatrixOperations.subtract(temp1, M5);
+        Matrix C11 = MatrixOperations.add(temp2, M7);
 
         // Compute C12 = M3 + M5
         Matrix C12 = MatrixOperations.add(M3, M5);
@@ -126,9 +139,9 @@ public class StrassenMultiplication implements MatrixMultiplier {
         Matrix C21 = MatrixOperations.add(M2, M4);
 
         // Compute C22 = M1 + M3 - M2 + M6
-        Matrix temp3 = MatrixOperations.add(M1, M3);  // (M1 + M3)
-        Matrix temp4 = MatrixOperations.subtract(temp3, M2);  // (M1 + M3 - M2)
-        Matrix C22 = MatrixOperations.add(temp4, M6);  // (M1 + M3 - M2 + M6)
+        Matrix temp3 = MatrixOperations.add(M1, M3);
+        Matrix temp4 = MatrixOperations.subtract(temp3, M2);
+        Matrix C22 = MatrixOperations.add(temp4, M6);
 
         // Step 4: Merge submatrices into the final n x n result matrix
         return MatrixOperations.merge(C11, C12, C21, C22);
