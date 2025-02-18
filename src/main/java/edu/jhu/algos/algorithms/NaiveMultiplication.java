@@ -2,6 +2,7 @@ package edu.jhu.algos.algorithms;
 
 import edu.jhu.algos.models.Matrix;
 import edu.jhu.algos.utils.PerformanceMetrics;
+import edu.jhu.algos.utils.MatrixValidator;
 
 /**
  * Implements the O(n³) naive matrix multiplication algorithm.
@@ -14,7 +15,7 @@ import edu.jhu.algos.utils.PerformanceMetrics;
 public class NaiveMultiplication implements MatrixMultiplier {
 
     // PerformanceMetrics tracks both time and multiplication count
-    private final PerformanceMetrics metrics; // Final so each instance has its own metrics
+    private final PerformanceMetrics metrics; // Each instance has its own metrics
 
     /**
      * Default constructor initializes a new PerformanceMetrics object.
@@ -33,34 +34,39 @@ public class NaiveMultiplication implements MatrixMultiplier {
      */
     @Override
     public Matrix multiply(Matrix A, Matrix B) {
-        // Validate that A and B have the same dimension
-        if (A.getSize() != B.getSize()) {
+        // Validate input matrices
+        if (!MatrixValidator.isSameSize(A, B)) {
             throw new IllegalArgumentException("Matrices must be the same size for naive multiplication.");
         }
 
         // Reset all metrics: time and multiplication count
         metrics.resetAll();
-        // Start timing
-        metrics.startTimer();
+        metrics.startTimer(); // Start timing
 
         int n = A.getSize();             // The dimension of the matrices
         Matrix result = new Matrix(n);   // Prepare an empty matrix of size n x n
 
         // Triple nested loop for naive O(n^3) multiplication
-        for (int i = 0; i < n; i++) {                 // Loop over rows of A
-            for (int j = 0; j < n; j++) {             // Loop over columns of B
-                int sum = 0;                          // Accumulate A[i,k]*B[k,j]
-                for (int k = 0; k < n; k++) {         // Loop over 'k'
-                    sum += A.get(i, k) * B.get(k, j); // Multiply A[i,k]*B[k,j]
-                    metrics.incrementMultiplicationCount(); // Count each scalar multiplication
+        for (int i = 0; i < n; i++) {               // Rows of A
+            for (int j = 0; j < n; j++) {           // Columns of B
+                int sum = 0;                        // Accumulate A[i,k]*B[k,j]
+                for (int k = 0; k < n; k++) {       // Loop over 'k'
+                    int aVal = A.get(i, k);        // Cache A[i, k]
+                    int bVal = B.get(k, j);        // Cache B[k, j]
+                    sum += aVal * bVal;            // Multiply and sum
+                    metrics.incrementMultiplicationCount(); // Track scalar multiplication
                 }
-                result.set(i, j, sum); // Place the computed sum into the result matrix
+                result.set(i, j, sum); // Store computed sum
             }
         }
 
-        // Stop timing
-        metrics.stopTimer();
-        // Return the final result matrix
+        metrics.stopTimer(); // Stop timing
+
+        // Optional Debug Output (Remove in final version)
+        // System.out.println("NaiveMultiplication | Size: " + n +
+        //                   " | Time: " + getElapsedTimeMs() + " ms" +
+        //                   " | Multiplications: " + getMultiplicationCount());
+
         return result;
     }
 
