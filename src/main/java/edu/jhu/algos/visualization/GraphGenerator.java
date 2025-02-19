@@ -3,37 +3,54 @@ package edu.jhu.algos.visualization;
 import edu.jhu.algos.compare.PerformanceRecord;
 import edu.jhu.algos.utils.DebugConfig;
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.XYTextAnnotation;
-import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.ui.TextAnchor;
+import org.jfree.chart.annotations.XYTextAnnotation;
+import org.jfree.chart.block.BlockBorder;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.chart.ChartUtils;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 /**
- * Generates and displays performance comparison graphs of matrix multiplication algorithms
- * with annotations for clarity.
+ * Generates a performance comparison graph of matrix multiplication algorithms.
+ * <p>
+ * - Compares Naive vs. Strassen multiplication
+ * - Expected vs. actual multiplication counts
+ * - Saves graph as a PNG file with a dynamic filename
  */
 public class GraphGenerator {
 
-    public static void generateGraph(List<PerformanceRecord> records) {
+    /**
+     * Generates and saves a graph comparing matrix multiplication performance.
+     *
+     * @param records  The list of performance records.
+     * @param inputFile The name of the input file (used for dynamic naming).
+     * @param plotFile The file path to save the plot. If null, defaults to "<inputFile>_plot.png".
+     */
+    public static void generateGraph(List<PerformanceRecord> records, String inputFile, String plotFile) {
+        if (records.isEmpty()) {
+            System.err.println("Warning: No performance records available for plotting.");
+            return;
+        }
+
+        // Default to "<inputFile>_plot.png" if no plot file is provided
+        if (plotFile == null || plotFile.isEmpty()) {
+            plotFile = inputFile.replaceAll("\\.txt$", "") + "_plot.png";
+        }
+
+        // Create dataset
         XYSeries naiveExpectedSeries = new XYSeries("Expected O(n³)");
         XYSeries naiveActualSeries = new XYSeries("Actual Naive Multiplications");
         XYSeries strassenExpectedSeries = new XYSeries("Expected O(n^2.8074)");
         XYSeries strassenActualSeries = new XYSeries("Actual Strassen Multiplications");
-
-        XYSeriesCollection dataset = new XYSeriesCollection();
 
         for (PerformanceRecord record : records) {
             int n = record.getSize();
@@ -52,12 +69,13 @@ public class GraphGenerator {
                     " | Strassen Actual: " + record.getStrassenMultiplications());
         }
 
+        XYSeriesCollection dataset = new XYSeriesCollection();
         dataset.addSeries(naiveExpectedSeries);
         dataset.addSeries(naiveActualSeries);
         dataset.addSeries(strassenExpectedSeries);
         dataset.addSeries(strassenActualSeries);
 
-        // Create the chart
+        // Create chart
         JFreeChart chart = ChartFactory.createXYLineChart(
                 "Matrix Multiplication Performance",
                 "Matrix Size (n)",
@@ -72,17 +90,17 @@ public class GraphGenerator {
         XYPlot plot = chart.getXYPlot();
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
 
-        // Set distinct colors for each series
+        // Set distinct colors
         renderer.setSeriesPaint(0, Color.RED);      // Expected O(n³)
         renderer.setSeriesPaint(1, Color.BLUE);     // Actual Naive Multiplications
         renderer.setSeriesPaint(2, Color.GREEN);    // Expected O(n^2.8074)
         renderer.setSeriesPaint(3, Color.ORANGE);   // Actual Strassen Multiplications
 
         // Set distinct markers
-        renderer.setSeriesShapesVisible(0, true); // Expected O(n³) - Squares
-        renderer.setSeriesShapesVisible(1, true); // Actual Naive - Circles
-        renderer.setSeriesShapesVisible(2, true); // Expected O(n^2.8074) - Triangles
-        renderer.setSeriesShapesVisible(3, true); // Actual Strassen - Diamonds
+        renderer.setSeriesShapesVisible(0, true);
+        renderer.setSeriesShapesVisible(1, true);
+        renderer.setSeriesShapesVisible(2, true);
+        renderer.setSeriesShapesVisible(3, true);
 
         plot.setRenderer(renderer);
         plot.setBackgroundPaint(Color.WHITE);
@@ -112,26 +130,31 @@ public class GraphGenerator {
             plot.addAnnotation(strassenAnnotation);
         }
 
-        // Display chart in a GUI window
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Performance Graph");
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.getContentPane().add(new ChartPanel(chart));
-            frame.pack();
-            frame.setVisible(true);
-
-            new Timer(5000, e -> frame.dispose()).start(); // Auto-close in 5 seconds
-        });
-
-        // Save chart as PNG
-        saveChartAsPNG(chart, "output/matrix_performance.png");
+        saveChartAsPNG(chart, plotFile);
     }
 
+    /**
+     * Saves the generated chart as a PNG file.
+     *
+     * @param chart    The chart to save.
+     * @param filePath The file path where the chart should be saved.
+     */
     private static void saveChartAsPNG(JFreeChart chart, String filePath) {
         File outputFile = new File(filePath);
+
+        // Ensure the directory exists
+        File outputDir = outputFile.getParentFile();
+        if (outputDir != null && !outputDir.exists()) {
+            if (!outputDir.mkdirs()) {
+                System.err.println("Error: Unable to create output directory " + outputDir.getAbsolutePath());
+                return;
+            }
+        }
+
         try {
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
-            DebugConfig.log("Annotated Graph saved to: " + filePath);
+            DebugConfig.log("Graph saved to: " + filePath);
+            System.out.println("Graph successfully saved to: " + filePath);
         } catch (IOException e) {
             System.err.println("Error saving graph to file: " + e.getMessage());
         }

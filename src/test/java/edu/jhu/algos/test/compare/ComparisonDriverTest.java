@@ -21,14 +21,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ComparisonDriverTest {
 
     private static final String TEST_FILE = "input/LabStrassenInput.txt"; // Path to input matrices
-
+    private static final String OUTPUT_FILE = "output/LabStrassenOutput.txt";
     /**
      * Tests whether the driver correctly reads and processes the input file.
      */
     @Test
     public void testRunComparison() {
         // Run the comparison driver on the input file
-        ComparisonDriver.ComparisonResult result = ComparisonDriver.runComparison(TEST_FILE);
+        ComparisonDriver.ComparisonResult result = ComparisonDriver.runComparison(TEST_FILE, OUTPUT_FILE);
 
         //**Ensure the expected output is printed**
         System.out.println("=== Comparison Driver Output ===");

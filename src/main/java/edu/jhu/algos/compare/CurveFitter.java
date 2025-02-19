@@ -11,6 +11,9 @@ import edu.jhu.algos.utils.DebugConfig; // Import DebugConfig
  */
 public class CurveFitter {
 
+    private static final double EPSILON = 1e-12;  // Small threshold to prevent floating-point issues
+    private static final double MIN_VALID_TIME = 0.1; // Ignore execution times smaller than 0.1ms
+
     /**
      * Computes the best-fit constant `c` for the function f(n) = c * (n^exp)
      * using least-squares estimation.
@@ -21,41 +24,40 @@ public class CurveFitter {
      * @return The estimated best-fit constant `c`, or `0` if no valid data is provided.
      */
     public static double fitConstant(List<PerformanceRecord> records, double exponent, boolean useNaiveTime) {
-        double numerator = 0.0;  // Σ [T(n) * n^exp]
-        double denominator = 0.0; // Σ [(n^exp)²]
+        double numerator = 0.0;
+        double denominator = 0.0;
+        int validCount = 0; // Track valid entries
 
-        // Edge case: No records
         if (records == null || records.isEmpty()) {
             System.err.println("Warning: No valid data provided to CurveFitter, returning 0.");
             return 0;
         }
 
-        int validCount = 0; // Count valid entries
-
         for (PerformanceRecord r : records) {
             long time = useNaiveTime ? r.getNaiveTimeMs() : r.getStrassenTimeMs();
             int size = r.getSize();
 
-            // Skip invalid or zero execution times
-            if (time <= 0) continue;
+            // Strictly ignore negative or zero times
+            if (time <= 0 || Math.abs(time) < 1e-8) continue;
 
-            double nPowerExp = Math.pow(size, exponent);
+            double logN = Math.log(size);
+            double nPowerExp = Math.exp(exponent * logN);
+
             numerator += time * nPowerExp;
-            denominator += nPowerExp * nPowerExp; // Square the value instead of using 2*exp
+            denominator += nPowerExp * nPowerExp;
             validCount++;
         }
 
-        // Debugging logs using String.format()
+        // Debugging logs
         DebugConfig.log(String.format("Valid Data Points: %d", validCount));
         DebugConfig.log(String.format("Computed Numerator: %.8e", numerator));
         DebugConfig.log(String.format("Computed Denominator: %.8e", denominator));
 
-        // Edge case: Prevent division by zero or extremely small values
-        if (Math.abs(denominator) < 1e-12) {  // Adjust threshold if needed
-            System.err.printf("Warning: Computed denominator is near zero (denominator=%.12e) in CurveFitter for exponent %.6f. Returning 0.%n", denominator, exponent);
+        // Ensure a strict threshold on small denominators
+        if (validCount == 0 || Math.abs(denominator) < 1e-8) {
+            System.err.printf("Warning: Computed denominator too small (denominator=%.12e), returning 0.%n", denominator);
             return 0;
         }
-
 
         double result = numerator / denominator;
         DebugConfig.log(String.format("Computed Constant (exp=%.6f): %.8f", exponent, result));

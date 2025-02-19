@@ -15,7 +15,8 @@ The objective is to evaluate the efficiency of Strassen’s algorithm compared t
 - Verifies the correctness of Strassen’s algorithm against naive multiplication.
 - Generates formatted tables of results.
 - Produces performance graphs comparing expected and actual complexity trends.
-![img.png](img.png)
+
+![img_1.png](img_1.png)
 
 ---
 
@@ -24,12 +25,16 @@ The objective is to evaluate the efficiency of Strassen’s algorithm compared t
 - **Automated Comparisons:** Checks whether Strassen and naive multiplication results match.
 - **Graph Generation:** Plots multiplication counts and expected complexity curves.
 - **Debug Mode:** Enables verbose logging for tracking execution details.
-- **Input Handling:** Reads matrix data dynamically from input files.
+- **Flexible File Handling:**
+   - **Input files are read from the `input/` directory.**
+   - **Output files (logs and plots) are stored in the `output/` directory.**
+   - **Supports user-specified filenames for logs and plots via command-line arguments.**
 - **Matrix Operations:** Supports addition, subtraction, and splitting/merging for Strassen’s algorithm.
 
 ---
 
 ## **Project Structure**
+The project is organized into packages based on functionality:
 ```
 .
 ├── input/                  # Input matrices
@@ -145,15 +150,15 @@ Strassen’s method replaces eight multiplications with seven at each recursion 
 ### **With Maven**
 ```sh
 mvn clean package
-java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt
 ```
 Enable debug mode:
 ```sh
-java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt --debug
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt --debug
 ```
 Generate performance graphs:
 ```sh
-java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt --plot
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt --plot
 ```
 
 ### **Without Maven**
@@ -167,7 +172,7 @@ jar cfm target/MatrixMultiplication-1.0-SNAPSHOT.jar src/main/resources/META-INF
 ```
 #### **Run the JAR**
 ```sh
-java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt
 ```
 
 ---
@@ -195,7 +200,7 @@ java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.tx
 0 -2 1 2
 ```
 
-### **Output (`matrix_comparison.txt`)**
+### **Output (`LabStrassenOutput.txt`)**
 ```
 Matrix Pair #1
 Matrix A (size 2):

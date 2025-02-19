@@ -24,20 +24,24 @@ import java.util.List;
  */
 public class ComparisonDriver {
 
-    private static final String OUTPUT_TXT_FILE = "output/matrix_comparison.txt"; // TXT output file path
-
     /**
      * Reads matrix pairs from the input file, applies Naive and Strassen multiplication,
      * and returns:
      * - A formatted step-by-step output log,
      * - A list of performance records for comparison.
      *
-     * @param inputFile Path to the input file containing matrix pairs.
+     * @param inputFile  Path to the input file containing matrix pairs.
+     * @param outputFile Path to the output file (optional). If null, defaults to "<inputFile>_output.txt".
      * @return ComparisonResult object containing output logs and performance records.
      */
-    public static ComparisonResult runComparison(String inputFile) {
-        StringBuilder fullOutput = new StringBuilder();  // Stores formatted output for printing & saving
-        List<PerformanceRecord> records = new ArrayList<>();  // Stores performance metrics
+    public static ComparisonResult runComparison(String inputFile, String outputFile) {
+        StringBuilder fullOutput = new StringBuilder(); // Stores formatted output for printing & saving
+        List<PerformanceRecord> records = new ArrayList<>(); // Stores performance metrics
+
+        // Generate default output filename if none is provided
+        if (outputFile == null || outputFile.isEmpty()) {
+            outputFile = inputFile.replaceAll("\\.txt$", "") + "_output.txt";
+        }
 
         try {
             MatrixFileHandler fileHandler = new MatrixFileHandler();
@@ -93,9 +97,9 @@ public class ComparisonDriver {
 
             System.out.println(fullOutput.toString());
 
-            saveToFile(OUTPUT_TXT_FILE, fullOutput.toString());
+            saveToFile(outputFile, fullOutput.toString());
 
-            System.out.println("Full comparison output saved to: " + OUTPUT_TXT_FILE);
+            System.out.println("Full comparison output saved to: " + outputFile);
 
         } catch (IOException e) {
             fullOutput.append("I/O Error while processing file '").append(inputFile).append("': ").append(e.getMessage()).append("\n");
@@ -107,10 +111,10 @@ public class ComparisonDriver {
     /**
      * Runs a specific matrix multiplication algorithm on (A, B) and returns the result.
      *
-     * @param multiplier The algorithm to use (Naive or Strassen).
-     * @param A The first matrix.
-     * @param B The second matrix.
-     * @param methodName The name of the algorithm (for logging).
+     * @param multiplier  The algorithm to use (Naive or Strassen).
+     * @param A           The first matrix.
+     * @param B           The second matrix.
+     * @param methodName  The name of the algorithm (for logging).
      * @return MultiplicationResult object containing the result matrix, time, and multiplications.
      */
     private static MultiplicationResult runMultiplication(MatrixMultiplier multiplier, Matrix A, Matrix B, String methodName) {
@@ -137,7 +141,7 @@ public class ComparisonDriver {
     /**
      * Saves a given string to a file.
      * @param filePath The file path where the content should be saved.
-     * @param content The string content to write to the file.
+     * @param content  The string content to write to the file.
      */
     private static void saveToFile(String filePath, String content) {
         try (FileWriter writer = new FileWriter(filePath)) {
