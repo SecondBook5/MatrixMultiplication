@@ -79,13 +79,9 @@ public class ComparisonDriver {
                 fullOutput.append("Naive vs. Strassen same? ").append(same).append("\n")
                         .append("====================================================\n\n");
 
-                // Compute Big-O constants using CurveFitter
-                double naiveConstant = CurveFitter.fitConstant(records, 3.0, true);
-                double strassenConstant = CurveFitter.fitConstant(records, Math.log(7) / Math.log(2), false);
-
                 // Store performance data
                 records.add(new PerformanceRecord(n, naiveResult.timeMs, naiveResult.multiplications,
-                        strassenResult.timeMs, strassenResult.multiplications, naiveConstant, strassenConstant));
+                        strassenResult.timeMs, strassenResult.multiplications));
             }
 
             // PRINT ALL RESULTS FIRST
