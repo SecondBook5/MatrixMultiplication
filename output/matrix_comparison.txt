@@ -12,7 +12,7 @@ Naive Multiplication Result:
   16   17 
   26   22 
 
-Naive Time (ms): 16
+Naive Time (ms): 26
 Naive Multiplications: 8
 
 Strassen Multiplication Result:
@@ -45,7 +45,7 @@ Naive Multiplication Result:
   11    5   -1    1 
   -6    9   -8    3 
 
-Naive Time (ms): 0
+Naive Time (ms): 1
 Naive Multiplications: 64
 
 Strassen Multiplication Result:
@@ -105,7 +105,7 @@ Strassen Multiplication Result:
   18    9   13   12    5    3    0   -2 
   18   -5   -4  -11   -3    1    3    3 
 
-Strassen Time (ms): 1
+Strassen Time (ms): 2
 Strassen Multiplications: 343
 
 Naive vs. Strassen same? true
@@ -116,7 +116,7 @@ Naive vs. Strassen same? true
 -------------------------------------------------------------------------------------------------------------
 |   Matrix n | Naive Time (ms) |     Naive Count | Strassen Time (ms) |  Strassen Count |      Big-O |
 -------------------------------------------------------------------------------------------------------------
-|          2 |              16 |               8 |               0 |               7 |  Uncertain |
-|          4 |               0 |              64 |               0 |              49 |   Ω(n^2.8) |
-|          8 |               4 |             512 |               1 |             343 |   Θ(n^2.9) |
+|          2 |              26 |               8 |               0 |               7 |  Uncertain |
+|          4 |               1 |              64 |               0 |              49 |   Θ(n^2.9) |
+|          8 |               4 |             512 |               2 |             343 |   Θ(n^2.9) |
 -------------------------------------------------------------------------------------------------------------
