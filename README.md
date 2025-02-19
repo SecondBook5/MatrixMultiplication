@@ -177,17 +177,107 @@ java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt
 
 ---
 
+## **Project Setup & Execution Guide**
 
-## **Example Input and Output**
-### **Input (`LabStrassenInput.txt`)**
+### **1. Environment Requirements**
+This project was developed and tested in a **WSL2 Ubuntu 22.04 environment** on Windows. The following software versions were used:
+
+- **Java Version:** OpenJDK 17
+- **Maven Version:** Apache Maven 3.8.8
+- **JUnit Version:** JUnit 5.8.2
+- **JFreeChart Version:** 1.5.3
+- **Build System:** Maven
+- **IDE Used:** IntelliJ IDEA 2024.3 (compatible with Eclipse, VS Code, or CLI-based compilation)
+
+**Important:** The project assumes a **Linux-compatible shell environment** for running scripts. If you are using **Windows natively**, you may need to adapt shell commands accordingly.
+
+---
+
+### **2. Installation and Build Instructions**
+
+This project is structured as a **Maven project**, which handles dependency management and compilation.
+
+#### **a) Installing Required Software**
+Ensure you have the required software installed before proceeding:
+
+**For Ubuntu (WSL2 or native Linux):**
+```sh
+sudo apt update && sudo apt install openjdk-17-jdk maven
 ```
-2
-2 1
-1 5
 
-6 7
-4 3
+**Verify installations:**
+```sh
+java -version
+mvn -version
+```
+Expected output:
+```
+openjdk version "17.0.9" 2024-01-01
+Apache Maven 3.8.8 (latest)
+```
 
+#### **b) Building the JAR File**
+To compile the project and create an **executable JAR file**, navigate to the project root directory and run:
+```sh
+mvn clean package
+```
+This will generate:
+- **Executable JAR:** `target/MatrixMultiplication-1.0-SNAPSHOT.jar`
+- **Compiled Classes:** Inside `target/classes/`
+
+---
+
+### **3. Running the Program**
+
+The program requires a **formatted input file** to run. The input file should be located in the **input/** directory.
+
+#### **a) Running with a Default Input File**
+Execute the program using an input file:
+```sh
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt
+```
+This will:
+- Read matrix pairs from `LabStrassenInput.txt`
+- Compute results using **Naive Multiplication** and **Strassen’s Algorithm**
+- Print performance metrics to the console
+- Generate an **output comparison file** in `output/`
+
+#### **b) Running with Debug Mode**
+To enable verbose logging, add the `--debug` flag:
+```sh
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/LabStrassenInput.txt --debug
+```
+
+#### **c) Running with Performance Graph Generation**
+To generate a **performance comparison plot**, use:
+```sh
+java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar input/scaling_test_cases.txt --plot
+```
+This produces:
+- **Graph Output:** `output/matrix_performance.png`
+- **Text-based Performance Table:** `output/matrix_comparison.txt`
+
+---
+
+### **4. Input File Format**
+The program requires an input file structured as follows:
+
+```
+n
+Matrix_A (row-major format)
+Matrix_B (row-major format)
+
+n
+Matrix_A (row-major format)
+Matrix_B (row-major format)
+```
+Where:
+- `n` is the matrix size (**must be a power of 2**).
+- Matrices are listed in **row-major order**.
+- A blank line separates each matrix pair.
+
+**Example Input File (`LabStrassenInput.txt`)**
+```
 4
 3 2 1 4
 -1 2 0 1
@@ -200,46 +290,102 @@ java -jar target/MatrixMultiplication-1.0-SNAPSHOT.jar LabStrassenInput.txt
 0 -2 1 2
 ```
 
-### **Output (`LabStrassenOutput.txt`)**
+**Example Output (`LabStrassenOutput.txt`)**
 ```
 Matrix Pair #1
-Matrix A (size 2):
-   2    1
-   1    5
+Matrix A (size 4):
+   3    2    1    4
+  -1    2    0    1
+   2    3   -1   -2
+   5    1    1    0
 
-Matrix B (size 2):
-   6    7
-   4    3
+Matrix B (size 4):
+  -1    2   -1    0
+   3   -1    0    2
+  -4    0   -3    1
+   0   -2    1    2
 
 Naive Multiplication Result:
-  16   17
-  26   22
+  0   10   -2   16
+  2   -3   -5    1
+ -15   12   -6   -4
+ -13   -1  -11    6
 
-Naive Time (ms): 5
-Naive Multiplications: 8
+Naive Time (ms): 3
+Naive Multiplications: 64
 
 Strassen Multiplication Result:
-  16   17
-  26   22
+  0   10   -2   16
+  2   -3   -5    1
+ -15   12   -6   -4
+ -13   -1  -11    6
 
-Strassen Time (ms): 0
-Strassen Multiplications: 7
-
-Naive vs. Strassen same? true
+Strassen Time (ms): 2
+Strassen Multiplications: 49
 ```
 
 ---
 
-## **Troubleshooting**
-1. **JFreeChart Missing**  
-   Run:
-   ```sh
-   mvn dependency:resolve
-   mvn clean package
-   ```
-2. **Graph Issue**  
-   Ensure input matrices are correctly formatted.
-3. **Program Hangs**  
-   Check `GraphGenerator.java` for exceptions.
+### **5. Project Structure**
+```
+MatrixMultiplication/
+│── input/                             # Input matrices
+│   ├── LabStrassenInput.txt
+│   ├── scaling_test_cases.txt
+│── output/                            # Output results and performance plots
+│   ├── matrix_comparison.txt
+│   ├── matrix_performance.png
+│── src/
+│   ├── main/java/edu/jhu/algos/       # Source code
+│   │   ├── Main.java                  # Entry point
+│   │   ├── algorithms/                # Naive & Strassen implementations
+│   │   ├── compare/                    # Performance tracking & output
+│   │   ├── io/                         # File handling utilities
+│   │   ├── models/                     # Matrix data structures
+│   │   ├── utils/                      # Helper functions
+│   │   ├── visualization/              # Graph generation
+│── pom.xml                             # Maven build file
+│── README.md                           # Project documentation
+```
 
 ---
+
+### **6. Testing**
+This project includes **JUnit tests** for correctness verification.
+
+#### **Running Tests**
+```sh
+mvn test
+```
+This will run all unit tests located in `src/test/` and print a summary.
+
+---
+
+### **7. Troubleshooting**
+#### **a) Missing Dependencies**
+If dependencies fail to resolve, run:
+```sh
+mvn dependency:resolve
+mvn clean package
+```
+
+#### **b) Graph Generation Issues**
+Ensure:
+- Input matrices are correctly formatted.
+- JFreeChart is installed (`mvn dependency:resolve` can help).
+
+#### **c) Program Hangs or Exits Unexpectedly**
+- Check `DebugConfig.log()` output for exceptions.
+- Validate input matrices are square and a **power of 2**.
+
+---
+
+### **8. Contact & Affiliation**
+- **Institution:** Johns Hopkins University
+- **Course:** EN.605.620 - Foundations of Algorithms for Bioinformatics
+- **Developer:** AJ Book
+- **Instructor:** Dr. Rubey
+- **For questions, contact:** abook3@jh.edu
+
+---
+
