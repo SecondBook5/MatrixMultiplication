@@ -71,7 +71,7 @@ public class PerformanceMetrics {
      */
     public void incrementMultiplicationCount() {
         multiplicationCount++;
-        System.out.println("Multiplication count updated: " + multiplicationCount);
+        //System.out.println("Multiplication count updated: " + multiplicationCount);
     }
 
 

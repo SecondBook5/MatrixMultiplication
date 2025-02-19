@@ -1,5 +1,7 @@
 package edu.jhu.algos.compare;
 
+import edu.jhu.algos.utils.DebugConfig; // Import DebugConfig
+
 /**
  * Stores performance metrics for a single matrix multiplication comparison.
  * <p>
@@ -42,18 +44,45 @@ public class PerformanceRecord {
         this.strassenConstant = strassenConstant;
 
         // Debugging to track exact values
-        System.out.println("DEBUG: PerformanceRecord Created - Naive Multiplications = " + naiveMultiplications);
+        DebugConfig.log("PerformanceRecord Created - Naive Multiplications = " + naiveMultiplications +
+                ", Strassen Multiplications = " + strassenMultiplications);
     }
 
-
     // Getters for all fields (ensures immutability)
-    public int getSize() { return n; }
-    public long getNaiveTimeMs() { return naiveTimeMs; }  // Matches NaiveMultiplication.getElapsedTimeMs()
-    public long getStrassenTimeMs() { return strassenTimeMs; }  // Matches StrassenMultiplication.getElapsedTimeMs()
-    public long getNaiveMultiplications() { return naiveMultiplications; }  // Matches getMultiplicationCount()
-    public long getStrassenMultiplications() { return strassenMultiplications; }  // Matches getMultiplicationCount()
-    public double getNaiveConstant() { return naiveConstant; }  // Experimentally fitted constant for O(n^3)
-    public double getStrassenConstant() { return strassenConstant; }  // Experimentally fitted constant for O(n^2.8074)
+    public int getSize() {
+        DebugConfig.log("Retrieving Matrix Size: " + n);
+        return n;
+    }
+
+    public long getNaiveTimeMs() {
+        DebugConfig.log("Retrieving Naive Time (ms): " + naiveTimeMs);
+        return naiveTimeMs;
+    }  // Matches NaiveMultiplication.getElapsedTimeMs()
+
+    public long getStrassenTimeMs() {
+        DebugConfig.log("Retrieving Strassen Time (ms): " + strassenTimeMs);
+        return strassenTimeMs;
+    }  // Matches StrassenMultiplication.getElapsedTimeMs()
+
+    public long getNaiveMultiplications() {
+        DebugConfig.log("Retrieving Naive Multiplications: " + naiveMultiplications);
+        return naiveMultiplications;
+    }  // Matches getMultiplicationCount()
+
+    public long getStrassenMultiplications() {
+        DebugConfig.log("Retrieving Strassen Multiplications: " + strassenMultiplications);
+        return strassenMultiplications;
+    }  // Matches getMultiplicationCount()
+
+    public double getNaiveConstant() {
+        DebugConfig.log("Retrieving Naive Constant: " + naiveConstant);
+        return naiveConstant;
+    }  // Experimentally fitted constant for O(n^3)
+
+    public double getStrassenConstant() {
+        DebugConfig.log("Retrieving Strassen Constant: " + strassenConstant);
+        return strassenConstant;
+    }  // Experimentally fitted constant for O(n^2.8074)
 
     /**
      * Returns a formatted string of the performance data.

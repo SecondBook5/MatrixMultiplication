@@ -1,6 +1,7 @@
 package edu.jhu.algos.compare;
 
 import java.util.List;
+import edu.jhu.algos.utils.DebugConfig; // Import DebugConfig
 
 /**
  * Fits empirical performance data to theoretical complexity functions.
@@ -44,19 +45,20 @@ public class CurveFitter {
             validCount++;
         }
 
-        // Debugging logs
-        System.out.printf("Valid Data Points: %d%n", validCount);
-        System.out.printf("Computed Numerator: %.8e%n", numerator);
-        System.out.printf("Computed Denominator: %.8e%n", denominator);
+        // Debugging logs using String.format()
+        DebugConfig.log(String.format("Valid Data Points: %d", validCount));
+        DebugConfig.log(String.format("Computed Numerator: %.8e", numerator));
+        DebugConfig.log(String.format("Computed Denominator: %.8e", denominator));
 
-        // Edge case: Prevent division by zero
-        if (denominator == 0) {
-            System.err.println("Warning: Computed denominator is zero. Returning 0.");
+        // Edge case: Prevent division by zero or extremely small values
+        if (Math.abs(denominator) < 1e-12) {  // Adjust threshold if needed
+            System.err.printf("Warning: Computed denominator is near zero (denominator=%.12e) in CurveFitter for exponent %.6f. Returning 0.%n", denominator, exponent);
             return 0;
         }
 
+
         double result = numerator / denominator;
-        System.out.printf("Computed Constant (exp=%.6f): %.8f%n", exponent, result);
+        DebugConfig.log(String.format("Computed Constant (exp=%.6f): %.8f", exponent, result));
         return result;
     }
 }

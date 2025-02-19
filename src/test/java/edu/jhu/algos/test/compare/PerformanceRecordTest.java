@@ -14,18 +14,19 @@ class PerformanceRecordTest {
     @Test
     void testPerformanceRecordInitialization() {
         // Define expected values
-        int expectedSize = 128;       // Matrix size
-        long expectedNaiveTime = 500; // Naive execution time in ms
-        long expectedStrassenTime = 320; // Strassen execution time in ms
-        long expectedNaiveCount = 100000; // Naive multiplication count
-        long expectedStrassenCount = 70000; // Strassen multiplication count
-        double expectedNaiveConstant = 0.005; // Hypothetical curve-fitted constant for O(n^3)
-        double expectedStrassenConstant = 0.002; // Hypothetical curve-fitted constant for O(n^2.81)
+        int expectedSize = 128;
+        long expectedNaiveTime = 500;
+        long expectedStrassenTime = 320;
+        long expectedNaiveCount = 100000;
+        long expectedStrassenCount = 70000;
+        double expectedNaiveConstant = 0.005;
+        double expectedStrassenConstant = 0.002;
 
-        // Create PerformanceRecord instance
+        // Corrected parameter order
         PerformanceRecord record = new PerformanceRecord(
-                expectedSize, expectedNaiveTime, expectedStrassenTime,
-                expectedNaiveCount, expectedStrassenCount,
+                expectedSize,
+                expectedNaiveTime, expectedNaiveCount,
+                expectedStrassenTime, expectedStrassenCount,
                 expectedNaiveConstant, expectedStrassenConstant
         );
 
@@ -42,31 +43,26 @@ class PerformanceRecordTest {
     @Test
     void testImmutability() {
         // Create a record with initial values
-        PerformanceRecord record = new PerformanceRecord(64, 200, 150, 50000, 35000, 0.01, 0.005);
+        PerformanceRecord record = new PerformanceRecord(
+                64, 200, 50000, 150, 35000, 0.01, 0.005
+        );
 
         // Retrieve values
-        int originalSize = record.getSize();
-        long originalNaiveTime = record.getNaiveTimeMs();
-        long originalStrassenTime = record.getStrassenTimeMs();
-        long originalNaiveCount = record.getNaiveMultiplications();
-        long originalStrassenCount = record.getStrassenMultiplications();
-        double originalNaiveConstant = record.getNaiveConstant();
-        double originalStrassenConstant = record.getStrassenConstant();
-
-        // Ensure values are immutable (do not change after retrieval)
-        assertEquals(64, originalSize);
-        assertEquals(200, originalNaiveTime);
-        assertEquals(150, originalStrassenTime);
-        assertEquals(50000, originalNaiveCount);
-        assertEquals(35000, originalStrassenCount);
-        assertEquals(0.01, originalNaiveConstant, 1e-6);
-        assertEquals(0.005, originalStrassenConstant, 1e-6);
+        assertEquals(64, record.getSize());
+        assertEquals(200, record.getNaiveTimeMs());
+        assertEquals(150, record.getStrassenTimeMs());
+        assertEquals(50000, record.getNaiveMultiplications());
+        assertEquals(35000, record.getStrassenMultiplications());
+        assertEquals(0.01, record.getNaiveConstant(), 1e-6);
+        assertEquals(0.005, record.getStrassenConstant(), 1e-6);
     }
 
     @Test
     void testZeroMultiplications() {
-        // Test edge case where multiplications are zero (e.g., multiplying by zero matrix)
-        PerformanceRecord record = new PerformanceRecord(32, 10, 15, 0, 0, 0.0, 0.0);
+        // Test edge case where multiplications are zero
+        PerformanceRecord record = new PerformanceRecord(
+                32, 10, 0, 15, 0, 0.0, 0.0
+        );
 
         assertEquals(0, record.getNaiveMultiplications(), "Naive multiplications should be zero.");
         assertEquals(0, record.getStrassenMultiplications(), "Strassen multiplications should be zero.");
@@ -77,7 +73,9 @@ class PerformanceRecordTest {
     @Test
     void testVeryLargeMatrixSizes() {
         // Edge case for large matrix sizes
-        PerformanceRecord record = new PerformanceRecord(1024, 2000, 1500, 100000000, 70000000, 0.0001, 0.00005);
+        PerformanceRecord record = new PerformanceRecord(
+                1024, 2000, 100000000, 1500, 70000000, 0.0001, 0.00005
+        );
 
         assertEquals(1024, record.getSize(), "Matrix size should match large input.");
         assertEquals(2000, record.getNaiveTimeMs(), "Naive execution time should match.");
@@ -91,7 +89,9 @@ class PerformanceRecordTest {
     @Test
     void testToStringFormat() {
         // Create a test record
-        PerformanceRecord record = new PerformanceRecord(64, 500, 350, 10000, 7500, 0.003, 0.0015);
+        PerformanceRecord record = new PerformanceRecord(
+                64, 500, 10000, 350, 7500, 0.003, 0.0015
+        );
 
         // Expected string format
         String expected = String.format("Size: 64 | Naive Time: 500 ms | Strassen Time: 350 ms | " +

@@ -6,7 +6,9 @@ import edu.jhu.algos.algorithms.MatrixMultiplier;
 import edu.jhu.algos.algorithms.NaiveMultiplication;
 import edu.jhu.algos.algorithms.StrassenMultiplication;
 import edu.jhu.algos.utils.MatrixUtils;
+import edu.jhu.algos.utils.DebugConfig;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +16,15 @@ import java.util.List;
 /**
  * Runs Naive and Strassen matrix multiplication on multiple (A, B) matrix pairs.
  * <p>
- * Returns:
+ * Generates:
  * - A detailed output log (step-by-step process).
- * - A list of performance records (size, time, multiplications).
+ * - A performance comparison table (ASCII format).
+ * - A full `.txt` log file for saving the entire output.
  * </p>
- * This class does not print to console or write to files directly.
  */
 public class ComparisonDriver {
+
+    private static final String OUTPUT_TXT_FILE = "output/matrix_comparison.txt"; // TXT output file path
 
     /**
      * Reads matrix pairs from the input file, applies Naive and Strassen multiplication,
@@ -32,7 +36,7 @@ public class ComparisonDriver {
      * @return ComparisonResult object containing output logs and performance records.
      */
     public static ComparisonResult runComparison(String inputFile) {
-        StringBuilder details = new StringBuilder();  // Stores formatted output
+        StringBuilder fullOutput = new StringBuilder();  // Stores formatted output for printing & saving
         List<PerformanceRecord> records = new ArrayList<>();  // Stores performance metrics
 
         try {
@@ -40,8 +44,8 @@ public class ComparisonDriver {
             List<Matrix[]> pairs = fileHandler.readMatrixPairs(inputFile); // Read (A, B) pairs
 
             if (pairs.isEmpty()) {
-                details.append("Warning: No valid matrix pairs found in file: ").append(inputFile).append("\n");
-                return new ComparisonResult(details.toString(), records);
+                fullOutput.append("Warning: No valid matrix pairs found in file: ").append(inputFile).append("\n");
+                return new ComparisonResult(fullOutput.toString(), records);
             }
 
             for (int i = 0; i < pairs.size(); i++) {
@@ -49,7 +53,7 @@ public class ComparisonDriver {
                 Matrix B = pairs.get(i)[1];
                 int n = A.getSize();
 
-                details.append("====================================================\n")
+                fullOutput.append("====================================================\n")
                         .append("Matrix Pair #").append(i + 1).append("\n")
                         .append("Matrix A (size ").append(n).append("):\n")
                         .append(MatrixUtils.toString(A)).append("\n")
@@ -58,42 +62,46 @@ public class ComparisonDriver {
 
                 // Run Naive Multiplication
                 MultiplicationResult naiveResult = runMultiplication(new NaiveMultiplication(), A, B, "Naive");
-                details.append(naiveResult.output);
-                System.out.println("DEBUG: Retrieved Naive Multiplications = " + naiveResult.multiplications); // Debugging
+                fullOutput.append(naiveResult.output);
+                DebugConfig.log("Retrieved Naive Multiplications = " + naiveResult.multiplications);
 
                 // Run Strassen Multiplication
                 MultiplicationResult strassenResult = runMultiplication(new StrassenMultiplication(), A, B, "Strassen");
-                details.append(strassenResult.output);
-                System.out.println("DEBUG: Retrieved Strassen Multiplications = " + strassenResult.multiplications); // Debugging
+                fullOutput.append(strassenResult.output);
+                DebugConfig.log("Retrieved Strassen Multiplications = " + strassenResult.multiplications);
 
                 // Compare outputs for correctness
                 boolean same = MatrixUtils.compareMatrices(naiveResult.result, strassenResult.result);
-                details.append("Naive vs. Strassen same? ").append(same).append("\n")
+                fullOutput.append("Naive vs. Strassen same? ").append(same).append("\n")
                         .append("====================================================\n\n");
 
                 // Compute Big-O constants using CurveFitter
-                List<PerformanceRecord> tempRecords = new ArrayList<>(records);  // Temporary list for estimation
-                tempRecords.add(new PerformanceRecord(n, naiveResult.timeMs, naiveResult.multiplications,
-                        strassenResult.timeMs, strassenResult.multiplications, 0, 0)); // Dummy constants
-
-                double naiveConstant = CurveFitter.fitConstant(tempRecords, 3.0, true);
-                double strassenConstant = CurveFitter.fitConstant(tempRecords, Math.log(7) / Math.log(2), false);
+                double naiveConstant = CurveFitter.fitConstant(records, 3.0, true);
+                double strassenConstant = CurveFitter.fitConstant(records, Math.log(7) / Math.log(2), false);
 
                 // Store performance data
-                System.out.println("DEBUG: Storing PerformanceRecord with Naive Multiplications = " + naiveResult.multiplications);
                 records.add(new PerformanceRecord(n, naiveResult.timeMs, naiveResult.multiplications,
                         strassenResult.timeMs, strassenResult.multiplications, naiveConstant, strassenConstant));
-
-                // Debugging after storing
-                System.out.println("DEBUG: Retrieved from records - Naive Multiplications = " + records.get(records.size() - 1).getNaiveMultiplications());
-
             }
 
+            // PRINT ALL RESULTS FIRST
+            System.out.println(fullOutput.toString());
+
+            // THEN APPEND PERFORMANCE TABLE & SAVE OUTPUTS
+            fullOutput.append("\n=== Performance Comparison Table ===\n")
+                    .append(ComparisonTableGenerator.toAsciiTable(records));
+
+            System.out.println(fullOutput.toString());
+
+            saveToFile(OUTPUT_TXT_FILE, fullOutput.toString());
+
+            System.out.println("Full comparison output saved to: " + OUTPUT_TXT_FILE);
+
         } catch (IOException e) {
-            details.append("I/O Error while processing file '").append(inputFile).append("': ").append(e.getMessage()).append("\n");
+            fullOutput.append("I/O Error while processing file '").append(inputFile).append("': ").append(e.getMessage()).append("\n");
         }
 
-        return new ComparisonResult(details.toString(), records);
+        return new ComparisonResult(fullOutput.toString(), records);
     }
 
     /**
@@ -106,16 +114,15 @@ public class ComparisonDriver {
      * @return MultiplicationResult object containing the result matrix, time, and multiplications.
      */
     private static MultiplicationResult runMultiplication(MatrixMultiplier multiplier, Matrix A, Matrix B, String methodName) {
-        System.out.println("Running " + methodName + " multiplication...");
+        DebugConfig.log("Running " + methodName + " multiplication...");
 
         Matrix result = multiplier.multiply(A, B);  // Perform multiplication
         long timeMs = multiplier.getElapsedTimeMs();  // Get execution time
         long multiplications = multiplier.getMultiplicationCount();  // Get multiplication count
 
-        // Debugging prints
-        System.out.println(methodName + " Multiplication Done");
-        System.out.println("Time taken: " + timeMs + " ms");
-        System.out.println("Multiplications counted: " + multiplications);
+        DebugConfig.log(methodName + " Multiplication Done");
+        DebugConfig.log("Time taken: " + timeMs + " ms");
+        DebugConfig.log("Multiplications counted: " + multiplications);
 
         // Generate formatted output
         StringBuilder output = new StringBuilder();
@@ -125,6 +132,19 @@ public class ComparisonDriver {
                 .append(methodName).append(" Multiplications: ").append(multiplications).append("\n\n");
 
         return new MultiplicationResult(result, timeMs, multiplications, output.toString());
+    }
+
+    /**
+     * Saves a given string to a file.
+     * @param filePath The file path where the content should be saved.
+     * @param content The string content to write to the file.
+     */
+    private static void saveToFile(String filePath, String content) {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write(content);
+        } catch (IOException e) {
+            System.err.println("Error saving file " + filePath + ": " + e.getMessage());
+        }
     }
 
     /**
