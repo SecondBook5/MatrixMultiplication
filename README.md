@@ -1,9 +1,5 @@
-# **Lab 1: Strassen Multiplication**
-### **EN.605.620 - Algorithms for Bioinformatics**
-**Developer:** AJ Book  
-**Instructor:** Dr. Rubey
+# **Matrix Multiplication**
 
----
 
 ## **Overview**
 This project implements and compares two matrix multiplication algorithms:
@@ -382,9 +378,7 @@ Ensure:
 
 ### **8. Contact & Affiliation**
 - **Institution:** Johns Hopkins University
-- **Course:** EN.605.620 - Foundations of Algorithms for Bioinformatics
 - **Developer:** AJ Book
-- **Instructor:** Dr. Rubey
 - **For questions, contact:** abook3@jh.edu
 
 ---
